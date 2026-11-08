@@ -1,5 +1,7 @@
 # quality-vps-kit
 
+[EN](README.md) · **RU**
+
 [![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases)
 [![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE)
@@ -9,8 +11,6 @@
 
 Read-only оценка нового VPS **до** того, как вы сделаете из него VPN/proxy-сервер.
 Войдите под root, запустите одну команду, получите читаемый отчёт и JSON для машин.
-
-> English version: [README.md](README.md)
 
 ## Часть семейства VPS-китов
 
