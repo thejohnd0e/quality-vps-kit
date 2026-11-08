@@ -81,6 +81,9 @@ _net_egress() {
       if _valid_ip "$fam" "$ip"; then
         ips+=("$ip")
         qvk_register_ip "$ip"
+        if [[ $fam == 4 ]] && grep -q '^loc=' "$QC_BODY" 2>/dev/null; then
+          qvk_geo_add "${name}_trace" "$(grep -m1 '^loc=' "$QC_BODY" | cut -d= -f2 | tr -d '')"
+        fi
         outcome=ok
       else
         ip="" outcome=invalid_answer fail_code=invalid_answer

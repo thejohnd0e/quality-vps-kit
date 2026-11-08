@@ -195,6 +195,30 @@ one baseline HTTPS endpoint answers, |clock offset| ≤ 30 s. Any verified viola
 else `suitable`. `/dev/net/tun` is not a criterion (TZ v1.2, change 11). Reasons are
 stored as message keys and rendered English for JSON, active language for humans.
 
+### D13. IP intelligence, geo consensus, service checks
+
+`lib/intel.sh` queries RIPEstat (`prefix-overview`, no key), IPinfo (`/<ip>/json`,
+optional `IPINFO_TOKEN`) and AbuseIPDB (`v2/check`, `ABUSEIPDB_API_KEY`). The first
+two were checked against the live APIs while developing; AbuseIPDB follows its
+documentation and is covered by fixtures only. Each source yields one test record and
+one `ip_intelligence.sources[]` entry built from the same variables.
+
+- Responses are parsed with small regex extractors (no `jq`). Fields are
+  pattern-checked; an unparsable answer is `unknown` / `invalid_answer`.
+- HTTP 429 → `skipped` / `rate_limited` (not retried); 401/403 → `unknown` / `http_403`
+  (not retried); timeouts, connect errors and 5xx are retried once
+  (`QVK_RETRY_DELAY_S`).
+- Keys travel in a `0600` header file passed with `curl -H @file`, removed right after
+  the request. They are never on a command line or in output.
+- `--redact-ip` drops the announced prefix and reverse DNS at collection time.
+- `hosting` is only reported when the service returns it; otherwise `null`.
+- Geo consensus collects countries from independent sources: IPinfo, AbuseIPDB and the
+  `loc=` line of Cloudflare `cdn-cgi/trace` responses seen during the egress and service
+  checks. Registry data is excluded. `geo_conflict` is `null` below two sources.
+- `lib/httpcheck.sh` classifies one GET per `ai`/`media`/`ru_hosted` endpoint:
+  2xx/3xx/401/404/405 reachable; 403 `http_denied`; 429 `rate_limited`; 5xx `unknown`;
+  transport failures `network_error`/`tls_error`. None of these changes the verdict.
+
 ## Not yet decided
 
 - `qvk-probe` language (Bash vs Python stdlib) — decide at the start of v0.2.

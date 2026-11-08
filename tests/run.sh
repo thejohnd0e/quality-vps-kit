@@ -17,7 +17,7 @@ bad() {
 mapfile -t shell_files < <(
   {
     printf '%s\n' qvk
-    find lib tests -type f -name '*.sh'
+    find lib tests scripts -type f -name '*.sh'
   } | sort
 )
 

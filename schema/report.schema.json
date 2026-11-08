@@ -5,215 +5,602 @@
   "description": "Report produced by qvk (and later qvkctl). Schema 0.x may change incompatibly on a minor bump until 1.0. Unknown values are null, never \"N/A\". Units are encoded in key suffixes: _ms, _s, _mbps, _bytes, _pct, _mb.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "tool", "run", "environment", "target", "probes", "system", "tests", "ip_intelligence", "summary"],
+  "required": [
+    "schema_version",
+    "tool",
+    "run",
+    "environment",
+    "target",
+    "probes",
+    "system",
+    "tests",
+    "ip_intelligence",
+    "summary"
+  ],
   "properties": {
-    "schema_version": { "const": "0.1" },
+    "schema_version": {
+      "const": "0.1"
+    },
     "tool": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "version"],
+      "required": [
+        "name",
+        "version"
+      ],
       "properties": {
-        "name": { "const": "quality-vps-kit" },
-        "version": { "type": "string", "minLength": 1 }
+        "name": {
+          "const": "quality-vps-kit"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "run": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "started_at", "finished_at", "profile", "load_test_enabled", "offline", "redacted"],
+      "required": [
+        "id",
+        "started_at",
+        "finished_at",
+        "profile",
+        "load_test_enabled",
+        "offline",
+        "redacted"
+      ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "started_at": { "$ref": "#/$defs/timestamp" },
-        "finished_at": { "$ref": "#/$defs/timestamp" },
-        "profile": { "enum": ["quick", "full"] },
-        "load_test_enabled": { "type": "boolean" },
-        "offline": { "type": "boolean" },
-        "redacted": { "type": "boolean" }
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "started_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "finished_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "profile": {
+          "enum": [
+            "quick",
+            "full"
+          ]
+        },
+        "load_test_enabled": {
+          "type": "boolean"
+        },
+        "offline": {
+          "type": "boolean"
+        },
+        "redacted": {
+          "type": "boolean"
+        }
       }
     },
     "environment": {
       "description": "Versions of tools that influence measurements; null when absent.",
       "type": "object",
-      "additionalProperties": { "type": ["string", "null"] }
+      "additionalProperties": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
     },
     "target": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "ip", "nat"],
+      "required": [
+        "id",
+        "ip",
+        "nat"
+      ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "ip": { "type": ["string", "null"] },
-        "nat": { "enum": ["none", "one_to_one_suspected", "cgnat_suspected", "unknown"] }
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ip": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nat": {
+          "enum": [
+            "none",
+            "one_to_one_suspected",
+            "cgnat_suspected",
+            "unknown"
+          ]
+        }
       }
     },
     "probes": {
       "description": "Client-side vantage points (v0.2). Always empty in v0.1.",
       "type": "array",
-      "items": { "$ref": "#/$defs/probe" }
+      "items": {
+        "$ref": "#/$defs/probe"
+      }
     },
     "system": {
       "description": "Inventory facts of the target. Every key is always present; unknown = null. Facts carry no verdict; checks with a status live in tests[].",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "os", "kernel", "arch", "virtualization", "cpu", "memory", "disk_root", "load", "uptime_s",
-        "steal", "network", "time", "kernel_net", "modules", "firewall"
+        "os",
+        "kernel",
+        "arch",
+        "virtualization",
+        "cpu",
+        "memory",
+        "disk_root",
+        "load",
+        "uptime_s",
+        "steal",
+        "network",
+        "time",
+        "kernel_net",
+        "modules",
+        "firewall"
       ],
       "properties": {
         "os": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "version_id", "pretty_name"],
+          "required": [
+            "id",
+            "version_id",
+            "pretty_name"
+          ],
           "properties": {
-            "id": { "type": ["string", "null"] },
-            "version_id": { "type": ["string", "null"] },
-            "pretty_name": { "type": ["string", "null"] }
+            "id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "version_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pretty_name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         },
-        "kernel": { "type": ["string", "null"] },
-        "arch": { "type": "string" },
+        "kernel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "arch": {
+          "type": "string"
+        },
         "virtualization": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "container", "source"],
+          "required": [
+            "type",
+            "container",
+            "source"
+          ],
           "properties": {
-            "type": { "type": ["string", "null"], "description": "systemd-detect-virt vocabulary, 'vm' for an unidentified hypervisor, 'none' for bare metal" },
-            "container": { "type": ["boolean", "null"] },
-            "source": { "type": ["string", "null"] }
+            "type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "systemd-detect-virt vocabulary, 'vm' for an unidentified hypervisor, 'none' for bare metal"
+            },
+            "container": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "source": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           }
         },
         "cpu": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["model", "vcpus", "aes", "clmul"],
+          "required": [
+            "model",
+            "vcpus",
+            "aes",
+            "clmul"
+          ],
           "properties": {
-            "model": { "type": ["string", "null"] },
-            "vcpus": { "type": ["integer", "null"], "minimum": 0 },
-            "aes": { "type": ["boolean", "null"] },
-            "clmul": { "type": ["boolean", "null"] }
+            "model": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "vcpus": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "aes": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "clmul": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "memory": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["total_mb", "available_mb", "swap_total_mb"],
+          "required": [
+            "total_mb",
+            "available_mb",
+            "swap_total_mb"
+          ],
           "properties": {
-            "total_mb": { "type": ["integer", "null"], "minimum": 0 },
-            "available_mb": { "type": ["integer", "null"], "minimum": 0 },
-            "swap_total_mb": { "type": ["integer", "null"], "minimum": 0 }
+            "total_mb": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "available_mb": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "swap_total_mb": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
           }
         },
         "disk_root": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["total_mb", "available_mb"],
+          "required": [
+            "total_mb",
+            "available_mb"
+          ],
           "properties": {
-            "total_mb": { "type": ["integer", "null"], "minimum": 0 },
-            "available_mb": { "type": ["integer", "null"], "minimum": 0 }
+            "total_mb": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "available_mb": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
           }
         },
         "load": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["load1", "load5", "load15"],
+          "required": [
+            "load1",
+            "load5",
+            "load15"
+          ],
           "properties": {
-            "load1": { "type": ["number", "null"], "minimum": 0 },
-            "load5": { "type": ["number", "null"], "minimum": 0 },
-            "load15": { "type": ["number", "null"], "minimum": 0 }
+            "load1": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "load5": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "load15": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
           }
         },
-        "uptime_s": { "type": ["integer", "null"], "minimum": 0 },
+        "uptime_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
         "steal": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["pct", "sample_s"],
+          "required": [
+            "pct",
+            "sample_s"
+          ],
           "properties": {
-            "pct": { "type": ["number", "null"], "minimum": 0 },
-            "sample_s": { "type": ["integer", "null"], "minimum": 0 }
+            "pct": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "sample_s": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
           }
         },
         "network": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["default_iface", "interface_mtu", "ipv4_addresses", "ipv6_addresses", "ipv6_default_route"],
+          "required": [
+            "default_iface",
+            "interface_mtu",
+            "ipv4_addresses",
+            "ipv6_addresses",
+            "ipv6_default_route"
+          ],
           "properties": {
-            "default_iface": { "type": ["string", "null"] },
-            "interface_mtu": { "type": ["integer", "null"], "minimum": 0 },
-            "ipv4_addresses": { "type": "array", "items": { "$ref": "#/$defs/if_address" } },
-            "ipv6_addresses": { "type": "array", "items": { "$ref": "#/$defs/if_address" } },
-            "ipv6_default_route": { "type": ["boolean", "null"] }
+            "default_iface": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "interface_mtu": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "ipv4_addresses": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/if_address"
+              }
+            },
+            "ipv6_addresses": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/if_address"
+              }
+            },
+            "ipv6_default_route": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "time": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["ntp_synchronized"],
+          "required": [
+            "ntp_synchronized"
+          ],
           "properties": {
-            "ntp_synchronized": { "type": ["boolean", "null"] }
+            "ntp_synchronized": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "kernel_net": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["tcp_congestion_control", "default_qdisc", "bbr", "rmem_max_bytes", "wmem_max_bytes", "ip_forward"],
+          "required": [
+            "tcp_congestion_control",
+            "default_qdisc",
+            "bbr",
+            "rmem_max_bytes",
+            "wmem_max_bytes",
+            "ip_forward"
+          ],
           "properties": {
-            "tcp_congestion_control": { "type": ["string", "null"] },
-            "default_qdisc": { "type": ["string", "null"] },
-            "bbr": { "enum": ["available", "absent", null] },
-            "rmem_max_bytes": { "type": ["integer", "null"], "minimum": 0 },
-            "wmem_max_bytes": { "type": ["integer", "null"], "minimum": 0 },
-            "ip_forward": { "type": ["boolean", "null"] }
+            "tcp_congestion_control": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default_qdisc": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bbr": {
+              "enum": [
+                "available",
+                "absent",
+                null
+              ]
+            },
+            "rmem_max_bytes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "wmem_max_bytes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "ip_forward": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "modules": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["wireguard", "amneziawg_loaded"],
+          "required": [
+            "wireguard",
+            "amneziawg_loaded"
+          ],
           "properties": {
-            "wireguard": { "enum": ["loaded", "available", "absent", null] },
-            "amneziawg_loaded": { "type": ["boolean", "null"] }
+            "wireguard": {
+              "enum": [
+                "loaded",
+                "available",
+                "absent",
+                null
+              ]
+            },
+            "amneziawg_loaded": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         },
         "firewall": {
           "description": "Presence of firewall state only; rule contents are never copied into the report.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["nftables_tables", "iptables_backend", "iptables_rules", "ufw_active", "firewalld_active"],
+          "required": [
+            "nftables_tables",
+            "iptables_backend",
+            "iptables_rules",
+            "ufw_active",
+            "firewalld_active"
+          ],
           "properties": {
-            "nftables_tables": { "type": ["integer", "null"], "minimum": 0 },
-            "iptables_backend": { "enum": ["nf_tables", "legacy", null] },
-            "iptables_rules": { "type": ["integer", "null"], "minimum": 0 },
-            "ufw_active": { "type": ["boolean", "null"] },
-            "firewalld_active": { "type": ["boolean", "null"] }
+            "nftables_tables": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "iptables_backend": {
+              "enum": [
+                "nf_tables",
+                "legacy",
+                null
+              ]
+            },
+            "iptables_rules": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "ufw_active": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "firewalld_active": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
           }
         }
       }
     },
     "tests": {
       "type": "array",
-      "items": { "$ref": "#/$defs/test" }
+      "items": {
+        "$ref": "#/$defs/test"
+      }
     },
     "ip_intelligence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sources", "geo_consensus"],
+      "required": [
+        "sources",
+        "geo_consensus"
+      ],
       "properties": {
-        "sources": { "type": "array", "items": { "type": "object" } },
-        "geo_consensus": { "type": ["object", "null"] }
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/intel_source"
+          }
+        },
+        "geo_consensus": {
+          "$ref": "#/$defs/geo_consensus"
+        }
       }
     },
     "summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["verdicts"],
+      "required": [
+        "verdicts"
+      ],
       "properties": {
         "verdicts": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["target_self_check", "client_reachability"],
+          "required": [
+            "target_self_check",
+            "client_reachability"
+          ],
           "properties": {
-            "target_self_check": { "$ref": "#/$defs/verdict" },
-            "client_reachability": { "$ref": "#/$defs/verdict" }
+            "target_self_check": {
+              "$ref": "#/$defs/verdict"
+            },
+            "client_reachability": {
+              "$ref": "#/$defs/verdict"
+            }
           }
         }
       }
@@ -225,93 +612,471 @@
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
     },
     "section": {
-      "enum": ["system", "vpn_readiness", "network_egress", "client_reachability", "throughput", "ip_intelligence", "http_reachability", "diagnostics"]
+      "enum": [
+        "system",
+        "vpn_readiness",
+        "network_egress",
+        "client_reachability",
+        "throughput",
+        "ip_intelligence",
+        "http_reachability",
+        "diagnostics"
+      ]
     },
-    "status": { "enum": ["pass", "warn", "fail", "unknown", "skipped", "error"] },
+    "status": {
+      "enum": [
+        "pass",
+        "warn",
+        "fail",
+        "unknown",
+        "skipped",
+        "error"
+      ]
+    },
     "diagnosis": {
-      "enum": ["none", "suspected_filtering", "suspected_throttling", "unreachable", "service_missing", "inconclusive", null]
+      "enum": [
+        "none",
+        "suspected_filtering",
+        "suspected_throttling",
+        "unreachable",
+        "service_missing",
+        "inconclusive",
+        null
+      ]
     },
     "http_outcome": {
-      "enum": ["reachable", "network_error", "tls_error", "http_denied", "rate_limited", "unknown", null]
+      "enum": [
+        "reachable",
+        "network_error",
+        "tls_error",
+        "http_denied",
+        "rate_limited",
+        "unknown",
+        null
+      ]
     },
     "reason_code": {
       "enum": [
-        "tool_missing", "not_root", "offline_mode", "no_api_key", "rate_limited", "timeout",
-        "dns_failure", "tcp_connect_failed", "connection_reset", "tls_failure", "http_error",
-        "http_403", "http_429", "invalid_answer", "curl_error", "not_implemented",
-        "no_probe", "no_responder", "load_not_allowed", "unsupported_platform", "conflict",
-        "insufficient_samples", "insufficient_data", "criteria_failed", "middlebox_suspected", "not_applicable",
-        "internal_error", null
+        "tool_missing",
+        "not_root",
+        "offline_mode",
+        "no_api_key",
+        "rate_limited",
+        "timeout",
+        "dns_failure",
+        "tcp_connect_failed",
+        "connection_reset",
+        "tls_failure",
+        "http_error",
+        "http_403",
+        "http_429",
+        "invalid_answer",
+        "curl_error",
+        "not_implemented",
+        "no_probe",
+        "no_responder",
+        "load_not_allowed",
+        "unsupported_platform",
+        "conflict",
+        "insufficient_samples",
+        "insufficient_data",
+        "criteria_failed",
+        "middlebox_suspected",
+        "not_applicable",
+        "internal_error",
+        null
       ]
     },
     "verdict": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["verdict", "reason_code", "reasons", "missing_evidence"],
+      "required": [
+        "verdict",
+        "reason_code",
+        "reasons",
+        "missing_evidence"
+      ],
       "properties": {
-        "verdict": { "enum": ["suitable", "unsuitable", "indeterminate"] },
-        "reason_code": { "$ref": "#/$defs/reason_code" },
-        "reasons": { "type": "array", "items": { "type": "string" } },
-        "missing_evidence": { "type": "array", "items": { "$ref": "#/$defs/section" } }
+        "verdict": {
+          "enum": [
+            "suitable",
+            "unsuitable",
+            "indeterminate"
+          ]
+        },
+        "reason_code": {
+          "$ref": "#/$defs/reason_code"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/section"
+          }
+        }
       }
     },
-    "metric_value": { "type": ["number", "null"] },
+    "metric_value": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
     "if_address": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["address", "prefix_len", "class"],
+      "required": [
+        "address",
+        "prefix_len",
+        "class"
+      ],
       "properties": {
-        "address": { "type": "string", "minLength": 1 },
-        "prefix_len": { "type": ["integer", "null"], "minimum": 0 },
-        "class": { "enum": ["private", "cgnat", "loopback", "link_local", "public", "ula", "global"] }
+        "address": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix_len": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "class": {
+          "enum": [
+            "private",
+            "cgnat",
+            "loopback",
+            "link_local",
+            "public",
+            "ula",
+            "global"
+          ]
+        }
       }
     },
     "test": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id", "section", "vantage", "endpoint", "method", "status", "diagnosis", "reason_code",
-        "reason", "started_at", "duration_ms", "timeout_ms", "samples", "metrics", "traffic_bytes", "error"
+        "id",
+        "section",
+        "vantage",
+        "endpoint",
+        "method",
+        "status",
+        "diagnosis",
+        "reason_code",
+        "reason",
+        "started_at",
+        "duration_ms",
+        "timeout_ms",
+        "samples",
+        "metrics",
+        "traffic_bytes",
+        "error"
       ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
-        "section": { "$ref": "#/$defs/section" },
-        "vantage": { "type": "string", "pattern": "^(target|probe:[a-z0-9_-]+)$" },
-        "endpoint": { "type": ["string", "null"] },
-        "method": { "type": "string", "minLength": 1 },
-        "status": { "$ref": "#/$defs/status" },
-        "diagnosis": { "$ref": "#/$defs/diagnosis" },
-        "http_outcome": { "$ref": "#/$defs/http_outcome" },
-        "reason_code": { "$ref": "#/$defs/reason_code" },
-        "reason": { "type": ["string", "null"] },
-        "started_at": { "$ref": "#/$defs/timestamp" },
-        "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "timeout_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "samples": { "type": ["integer", "null"], "minimum": 0 },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "section": {
+          "$ref": "#/$defs/section"
+        },
+        "vantage": {
+          "type": "string",
+          "pattern": "^(target|probe:[a-z0-9_-]+)$"
+        },
+        "endpoint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "diagnosis": {
+          "$ref": "#/$defs/diagnosis"
+        },
+        "http_outcome": {
+          "$ref": "#/$defs/http_outcome"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/reason_code"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "started_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "duration_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "samples": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
         "metrics": {
           "description": "Numeric metrics only; unit in key suffix.",
           "type": "object",
-          "additionalProperties": { "$ref": "#/$defs/metric_value" }
+          "additionalProperties": {
+            "$ref": "#/$defs/metric_value"
+          }
         },
         "details": {
           "description": "Non-numeric facts (strings, flags, lists) relevant to the test.",
           "type": "object"
         },
-        "traffic_bytes": { "type": ["integer", "null"], "minimum": 0 },
-        "error": { "type": ["string", "null"] }
+        "traffic_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "probe": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["probe_id", "access_type"],
+      "required": [
+        "probe_id",
+        "access_type"
+      ],
       "properties": {
-        "probe_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
-        "access_type": { "enum": ["fixed", "mobile", "unknown"] },
-        "operator": { "type": ["string", "null"] },
-        "asn": { "type": ["integer", "null"] },
-        "country": { "type": ["string", "null"] },
-        "source": { "type": ["string", "null"] }
+        "probe_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "access_type": {
+          "enum": [
+            "fixed",
+            "mobile",
+            "unknown"
+          ]
+        },
+        "operator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "asn": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "intel_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "test_id",
+        "status",
+        "reason_code",
+        "queried_at",
+        "asn",
+        "asn_holder",
+        "prefix",
+        "announced",
+        "country",
+        "hostname",
+        "hosting",
+        "abuse_confidence_pct",
+        "abuse_reports",
+        "usage_type"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "ripestat",
+            "ipinfo",
+            "abuseipdb"
+          ]
+        },
+        "test_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/reason_code"
+        },
+        "queried_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "asn": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "asn_holder": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "prefix": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Removed when --redact-ip is used."
+        },
+        "announced": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z]{2}$"
+        },
+        "hostname": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reverse DNS; removed when --redact-ip is used."
+        },
+        "hosting": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "hosting=true is normal for a VPS and is never a failure."
+        },
+        "abuse_confidence_pct": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "abuse_reports": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "usage_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "geo_consensus": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "sources",
+        "countries",
+        "geo_conflict",
+        "note"
+      ],
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "country"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+$"
+              },
+              "country": {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$"
+              }
+            }
+          }
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "geo_conflict": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "null when fewer than two sources reported a country."
+        },
+        "note": {
+          "type": "string"
+        }
       }
     }
   }

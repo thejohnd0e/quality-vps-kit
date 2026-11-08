@@ -125,7 +125,37 @@
       "error": null
     }
   ],
-  "ip_intelligence": { "sources": [], "geo_consensus": null },
+  "ip_intelligence": {
+    "sources": [
+      {
+        "source": "ripestat", "test_id": "intel_ripestat", "status": "pass", "reason_code": null,
+        "queried_at": "2026-11-08T12:00:14Z", "asn": 64500, "asn_holder": "EXAMPLE-AS - Example Hosting GmbH",
+        "prefix": "203.0.113.0/24", "announced": true, "country": null, "hostname": null, "hosting": null,
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+      },
+      {
+        "source": "ipinfo", "test_id": "intel_ipinfo", "status": "pass", "reason_code": null,
+        "queried_at": "2026-11-08T12:00:15Z", "asn": 64500, "asn_holder": "Example Hosting GmbH",
+        "prefix": null, "announced": null, "country": "DE", "hostname": null, "hosting": null,
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+      },
+      {
+        "source": "abuseipdb", "test_id": "intel_abuseipdb", "status": "skipped", "reason_code": "no_api_key",
+        "queried_at": "2026-11-08T12:00:15Z", "asn": null, "asn_holder": null,
+        "prefix": null, "announced": null, "country": null, "hostname": null, "hosting": null,
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+      }
+    ],
+    "geo_consensus": {
+      "sources": [
+        { "source": "cloudflare_trace", "country": "DE" },
+        { "source": "ipinfo", "country": "DE" }
+      ],
+      "countries": ["DE"],
+      "geo_conflict": false,
+      "note": "countries as reported by the listed services; says nothing about whether a given service works"
+    }
+  },
   "summary": {
     "verdicts": {
       "target_self_check": {
