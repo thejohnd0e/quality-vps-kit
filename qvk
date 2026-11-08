@@ -29,6 +29,12 @@ source "$QVK_LIB/tests.sh"
 source "$QVK_LIB/inventory.sh"
 # shellcheck source=lib/readiness.sh
 source "$QVK_LIB/readiness.sh"
+# shellcheck source=lib/net.sh
+source "$QVK_LIB/net.sh"
+# shellcheck source=lib/egress.sh
+source "$QVK_LIB/egress.sh"
+# shellcheck source=lib/verdict.sh
+source "$QVK_LIB/verdict.sh"
 # shellcheck source=lib/report.sh
 source "$QVK_LIB/report.sh"
 
@@ -178,15 +184,17 @@ cmd_doctor() {
 
 cmd_run() {
   local profile=quick format="" output="" output_set=0 load=0 v
+  local endpoints="$QVK_ROOT/config/endpoints.tsv"
   while (($#)); do
     case $1 in
-      --profile | --format | --output | --lang | --max-traffic-mb)
+      --profile | --format | --output | --lang | --max-traffic-mb | --endpoints)
         (($# >= 2)) || usage_error err.missing_value "$1"
         v=$2
         case $1 in
           --profile) profile=$v ;;
           --format) format=$v ;;
           --output) output=$v output_set=1 ;;
+          --endpoints) endpoints=$v ;;
           --max-traffic-mb) load=1 ;;
         esac
         shift
@@ -194,6 +202,7 @@ cmd_run() {
       --profile=*) profile=${1#*=} ;;
       --format=*) format=${1#*=} ;;
       --output=*) output=${1#*=} output_set=1 ;;
+      --endpoints=*) endpoints=${1#*=} ;;
       --lang=*) ;;
       --max-traffic-mb=*) load=1 ;;
       --offline) QVK_OFFLINE=1 ;;
@@ -223,6 +232,7 @@ cmd_run() {
     usage_error err.missing_value --output
   fi
   ((load == 0)) || usage_error err.load_not_implemented
+  qvk_load_endpoints "$endpoints" || usage_error err.endpoints "$QVK_EP_ERROR"
 
   # Environment checks: exit 2.
   if ! qvk_is_root; then
@@ -238,6 +248,7 @@ cmd_run() {
   [[ -z $missing ]] || qvk_die "$QVK_EXIT_ENV" "$(msg err.missing_required "$missing")"
 
   qvk_install_traps
+  qvk_tmpdir >/dev/null # create once in this shell so that cleanup knows it
   QVK_PROFILE=$profile
   QVK_RUN_ID=$(qvk_new_run_id)
   QVK_STARTED_AT=$(qvk_now_utc)
@@ -245,6 +256,8 @@ cmd_run() {
   qvk_progress "$(msg progress.inventory)"
   qvk_inventory_collect
   qvk_readiness_evaluate
+  qvk_egress_run
+  qvk_verdict_evaluate
 
   QVK_FINISHED_AT=$(qvk_now_utc)
 

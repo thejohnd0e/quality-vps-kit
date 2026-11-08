@@ -161,6 +161,40 @@ WireGuard work without it; userspace VPNs (amneziawg-go, wireguard-go) do not.
 UDP buffers below 16 MiB are `warn` with the recommended `sysctl` printed, never
 applied. VPN ports already in use are `warn` (an installed kit is a normal reason).
 
+### D11. Network checks from the target
+
+Modules: `lib/net.sh` (endpoint list, one measured `curl` call, outcome mapping,
+statistics), `lib/egress.sh` (checks), `lib/verdict.sh` (per-area verdicts).
+Endpoints live in `config/endpoints.tsv` (`<category> <name> <https-url>`, validated:
+https only, known category, no extra fields); `--endpoints FILE` overrides it.
+
+- Every request: HTTPS only, no redirects, body capped at 1 MiB, connect timeout 5 s,
+  total timeout 10 s (RTT probes: 3 s / 6 s). The loop is bounded, so a run always ends.
+- curl exit codes map to `fail` + `reason_code` for network problems (DNS, connect,
+  timeout, TLS, reset) and to `error` for curl-side problems. A tester error is never
+  reported as a network failure and never makes the verdict `unsuitable`.
+- Egress IPv4/IPv6: several echo services; disagreement is `warn` + `conflict` and
+  leaves `target.ip` null. An echo service proves only the egress address.
+- NAT: egress IP found on the interface → `none`; only a private address →
+  `one_to_one_suspected`; 100.64/10 → `cgnat_suspected`; else `unknown`. NAT is
+  informational and never a failure.
+- RTT towards Russia-hosted hosts is the TCP handshake time from the VPS
+  (`time_connect - time_namelookup`), 3 samples in `quick`, 20 in `full`; p95 only for
+  n ≥ 20. Every such test states that it is not client reachability. A handshake
+  under 1 ms is reported as `warn` / `middlebox_suspected`: a remote host cannot
+  answer that fast, so something near the machine terminates TCP (seen on WSL).
+- Clock offset: median of the `Date` header offsets of ≥ 3 distinct hosts, corrected
+  for request latency, resolution 1 s; |offset| > 30 s is `warn`.
+- `--offline` makes no request at all; every network test is `skipped` / `offline_mode`.
+
+### D12. target_self_check verdict (v0.1 preset)
+
+Criteria: RAM ≥ 512 MB, egress IPv4 determined without conflict, DNS works, at least
+one baseline HTTPS endpoint answers, |clock offset| ≤ 30 s. Any verified violation →
+`unsuitable`; otherwise any unknown → `indeterminate` (with `missing_evidence`);
+else `suitable`. `/dev/net/tun` is not a criterion (TZ v1.2, change 11). Reasons are
+stored as message keys and rendered English for JSON, active language for humans.
+
 ## Not yet decided
 
 - `qvk-probe` language (Bash vs Python stdlib) — decide at the start of v0.2.

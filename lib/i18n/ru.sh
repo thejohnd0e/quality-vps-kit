@@ -21,6 +21,7 @@ Read-only оценка нового VPS перед использованием 
   --output ФАЙЛ           Записать отчёт в ФАЙЛ (права 0600) вместо stdout
   --offline               Не обращаться ни к каким внешним интернет-ресурсам
   --redact-ip             Заменить IP-адреса в отчёте стабильными метками
+  --endpoints ФАЙЛ        Список endpoint (по умолчанию config/endpoints.tsv)
   --allow-load            Нагрузочные тесты: не реализовано в v0.1
   --max-traffic-mb N      Лимит трафика нагрузочных тестов: не реализовано в v0.1
 
@@ -150,6 +151,51 @@ Read-only оценка нового VPS перед использованием 
   [rd.ports_free]='свободны: %s'
   [rd.ports_busy]='заняты: %s'
 
-  [reason.not_implemented]='сетевые проверки в этой сборке ещё не реализованы; собраны только сведения о системе и готовности к VPN'
   [reason.no_probe]='standalone-запуск не может проверить доступность из клиентской сети; нужен клиентский probe (v0.2)'
+
+  [progress.egress]='проверка внешних IP-адресов...'
+  [progress.baseline]='замер базовых HTTPS-endpoint...'
+  [progress.rtt]='замер TCP RTT до узлов в РФ...'
+  [report.section.network]='Сеть (измерено с этого VPS)'
+  [test.egress_ipv4]='Внешний IPv4'
+  [test.egress_ipv6]='Внешний IPv6'
+  [test.dns_resolution]='DNS'
+  [test.clock_offset]='Расхождение часов'
+  [test.https]='HTTPS %s'
+  [test.rtt_ru]='RTT до РФ: %s'
+  [nat.none]='нет'
+  [nat.one_to_one_suspected]='вероятно 1:1 NAT'
+  [nat.cgnat_suspected]='вероятно CGNAT'
+  [nat.unknown]='неизвестно'
+  [net.skipped_cfg]='endpoint не заданы'
+  [net.egress4_ok]='%s (совпали %s из %s источников); NAT: %s'
+  [net.egress_ok]='%s (совпали %s из %s источников)'
+  [net.egress_conflict]='источники расходятся: %s'
+  [net.egress_fail]='echo-сервисы не дали корректного ответа'
+  [net.tester_error]='сбой curl на этой машине (ошибка тестера, а не сети)'
+  [net.no_ipv6]='нет IPv6-маршрута по умолчанию'
+  [net.https_ok]='%s: HTTP %s, TCP %s мс, TLS %s мс'
+  [net.https_fail]='%s: %s'
+  [net.rtt]='%s: p50 %s мс (мин %s, макс %s), %s/%s соединений; маршрут от VPS, а не из РФ'
+  [net.rtt_middlebox]='%s: handshake за %s мс неправдоподобен: отвечает прозрачный прокси или middlebox рядом, а не маршрут'
+  [net.dns_ok]='%s запросов успешно, p50 %s мс'
+  [net.dns_partial]='не разрешились %s из %s имён'
+  [net.dns_fail]='не разрешилось ни одно имя'
+  [net.clock_ok]='смещение %s с (%s источников, +/-1 с)'
+  [net.clock_bad]='часы сбиты на %s с: включите NTP, иначе TLS/REALITY могут не работать'
+  [net.clock_unknown]='недостаточно заголовков Date (%s)'
+  [net.offline]='пропущено (--offline)'
+  [verdict.all_passed]='все критерии пресета v0.1 выполнены: RAM, внешний IPv4, DNS, HTTPS, часы'
+  [verdict.ram_low]='RAM %s МБ меньше минимума пресета %s МБ'
+  [verdict.ram_unknown]='объём RAM неизвестен'
+  [verdict.no_egress]='не удалось определить публичный внешний IPv4: исходящий интернет не работает'
+  [verdict.egress_conflict]='echo-сервисы расходятся во внешнем IPv4'
+  [verdict.egress_unknown]='внешний IPv4 не проверялся'
+  [verdict.dns_fail]='DNS не работает'
+  [verdict.dns_unknown]='DNS не проверялся'
+  [verdict.https_fail]='ни один базовый HTTPS-endpoint не ответил'
+  [verdict.https_unknown]='базовый HTTPS не проверялся'
+  [verdict.clock_bad]='системные часы сбиты на %s с (допустимо %s с)'
+  [verdict.clock_unknown]='расхождение часов измерить не удалось'
+  [verdict.offline]='--offline: сетевые критерии не проверялись'
 )

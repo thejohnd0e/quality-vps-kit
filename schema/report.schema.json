@@ -237,9 +237,11 @@
     "reason_code": {
       "enum": [
         "tool_missing", "not_root", "offline_mode", "no_api_key", "rate_limited", "timeout",
-        "dns_failure", "tcp_refused", "tls_failure", "http_403", "http_429", "not_implemented",
+        "dns_failure", "tcp_connect_failed", "connection_reset", "tls_failure", "http_error",
+        "http_403", "http_429", "invalid_answer", "curl_error", "not_implemented",
         "no_probe", "no_responder", "load_not_allowed", "unsupported_platform", "conflict",
-        "insufficient_samples", "not_applicable", "internal_error", null
+        "insufficient_samples", "insufficient_data", "criteria_failed", "middlebox_suspected", "not_applicable",
+        "internal_error", null
       ]
     },
     "verdict": {

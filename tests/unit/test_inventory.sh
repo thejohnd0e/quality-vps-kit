@@ -82,7 +82,7 @@ print(json.dumps(v, ensure_ascii=False))' "$1" "$2" "$3"
 validate() { "$PY" -I "$REPO_ROOT/tests/tools/validate_report.py" "$1" >/dev/null; }
 
 run_fixture_json() {
-  "$REPO_ROOT/qvk" run --format json "$@" >"$WORK/r.json" 2>"$WORK/err"
+  "$REPO_ROOT/qvk" run --offline --format json "$@" >"$WORK/r.json" 2>"$WORK/err"
 }
 
 echo "# debian12-kvm-amd64 (full toolset, VM)"
@@ -138,10 +138,10 @@ assert_not_contains "$body" "2001:db8:10::5" "ipv6 removed from JSON"
 assert_eq '"<ip-1>"' "$(json_field "$R" system.network.ipv4_addresses.0.address)" "ipv4 label"
 assert_eq '"<ip-2>"' "$(json_field "$R" system.network.ipv6_addresses.0.address)" "ipv6 label"
 assert_eq 'true' "$(json_field "$R" run.redacted)" "run.redacted true"
-human=$("$REPO_ROOT/qvk" run --redact-ip 2>/dev/null)
+human=$("$REPO_ROOT/qvk" run --offline --redact-ip 2>/dev/null)
 assert_not_contains "$human" "203.0.113.10" "ipv4 removed from human output"
 assert_contains "$human" "<ip-1>/24 (public)" "human output shows label"
-human=$("$REPO_ROOT/qvk" run 2>/dev/null)
+human=$("$REPO_ROOT/qvk" run --offline 2>/dev/null)
 assert_contains "$human" "203.0.113.10/24 (public)" "without --redact-ip the address is shown"
 assert_contains "$human" "VPN readiness" "human readiness section"
 assert_contains "$human" "in use: 443/tcp (xray), 51820/udp" "human busy ports"
@@ -176,7 +176,7 @@ assert_contains "$(test_field "$R" listening_ports reason)" "80/tcp" "listening 
 assert_contains "$(test_field "$R" listening_ports reason)" "443/udp" "bound 443/udp found"
 assert_not_contains "$(test_field "$R" listening_ports reason)" "443/tcp" "established 443 is not a listener"
 assert_eq "" "$(stub_calls_not_allowed)" "only allow-listed read-only commands were run"
-human=$("$REPO_ROOT/qvk" run --lang ru 2>/dev/null)
+human=$("$REPO_ROOT/qvk" run --offline --lang ru 2>/dev/null)
 assert_contains "$human" "Готовность к VPN" "russian readiness section"
 assert_contains "$human" "lxc (контейнер)" "russian container label"
 

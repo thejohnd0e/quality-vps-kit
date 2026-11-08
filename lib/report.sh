@@ -11,16 +11,15 @@ QVK_PROFILE="quick"
 QVK_OFFLINE=0
 QVK_REDACT=0
 
-# Verdict state per area: verdict, reason_code (or empty), reason key, missing sections.
-QVK_SELF_VERDICT="indeterminate"
-QVK_SELF_REASON_CODE="not_implemented"
-QVK_SELF_REASON_KEY="reason.not_implemented"
-QVK_SELF_MISSING=(network_egress ip_intelligence http_reachability)
-
-QVK_CLIENT_VERDICT="indeterminate"
-QVK_CLIENT_REASON_CODE="no_probe"
-QVK_CLIENT_REASON_KEY="reason.no_probe"
-QVK_CLIENT_MISSING=(client_reachability)
+# Render a stored message "<key><US><arg>..." with msg (human) or msg_en (JSON).
+_qvk_render() {
+  local fn=$1 key args=()
+  key=${2%%"$QVK_US"*}
+  if [[ $2 == *"$QVK_US"* ]]; then
+    IFS=$QVK_US read -r -a args <<<"${2#*"$QVK_US"}"
+  fi
+  "$fn" "$key" "${args[@]}"
+}
 
 # Typed accessors over QVK_SYS.
 _s() { json_str_or_null "${QVK_SYS[$1]:-}"; }
@@ -81,14 +80,16 @@ qvk_system_json() {
       firewalld_active "$(_b firewall.firewalld_active)")"
 }
 
+# _qvk_verdict_json <verdict> <reason_code> <reasons array name> <missing array name>
 _qvk_verdict_json() {
-  local verdict=$1 code=$2 key=$3
-  shift 3
+  local verdict=$1 code=$2 r texts=()
+  local -n _vj_reasons=$3 _vj_missing=$4
+  for r in "${_vj_reasons[@]}"; do texts+=("$(_qvk_render msg_en "$r")"); done
   json_obj \
     verdict "$(json_str "$verdict")" \
     reason_code "$(json_str_or_null "$code")" \
-    reasons "$(json_str_arr "$(msg_en "$key")")" \
-    missing_evidence "$(json_str_arr "$@")"
+    reasons "$(json_str_arr "${texts[@]}")" \
+    missing_evidence "$(json_str_arr "${_vj_missing[@]}")"
 }
 
 _qvk_report_json_raw() {
@@ -106,13 +107,14 @@ _qvk_report_json_raw() {
     bash "$(json_str "$BASH_VERSION")" \
     curl "$(json_str_or_null "$(qvk_tool_version curl)")" \
     jq "$(json_str_or_null "$(qvk_tool_version jq)")")
-  target=$(json_obj id "$(json_str target)" ip null nat "$(json_str unknown)")
+  target=$(json_obj id "$(json_str target)" ip "$(json_str_or_null "$QVK_TARGET_IP")" \
+    nat "$(json_str "$QVK_TARGET_NAT")")
   ipintel=$(json_obj sources '[]' geo_consensus null)
   summary=$(json_obj verdicts "$(json_obj \
     target_self_check "$(_qvk_verdict_json "$QVK_SELF_VERDICT" "$QVK_SELF_REASON_CODE" \
-      "$QVK_SELF_REASON_KEY" "${QVK_SELF_MISSING[@]}")" \
+      QVK_SELF_REASONS QVK_SELF_MISSING)" \
     client_reachability "$(_qvk_verdict_json "$QVK_CLIENT_VERDICT" "$QVK_CLIENT_REASON_CODE" \
-      "$QVK_CLIENT_REASON_KEY" "${QVK_CLIENT_MISSING[@]}")")")
+      QVK_CLIENT_REASONS QVK_CLIENT_MISSING)")")
 
   json_obj \
     schema_version "$(json_str "$QVK_SCHEMA_VERSION")" \
@@ -149,15 +151,17 @@ _qvk_status_label() {
   esac
 }
 
+# _qvk_human_verdict <area> <verdict> <reasons array name> <missing array name>
 _qvk_human_verdict() {
-  local area=$1 verdict=$2 key=$3
-  shift 3
-  local missing IFS=','
-  missing="$*"
+  local area=$1 verdict=$2 r missing
+  local -n _hv_reasons=$3 _hv_missing=$4
   printf '  %s %s\n' "$(qvk_pad "$(msg "report.area.$area")" 32)" "$(qvk_color_verdict "$verdict")"
-  printf '    - %s\n' "$(msg "$key")"
-  if (($#)); then
-    printf '    - %s\n' "$(msg report.missing "${missing//,/, }")"
+  for r in "${_hv_reasons[@]}"; do
+    printf '    - %s\n' "$(_qvk_render msg "$r")"
+  done
+  if ((${#_hv_missing[@]})); then
+    missing=$(printf '%s, ' "${_hv_missing[@]}")
+    printf '    - %s\n' "$(msg report.missing "${missing%, }")"
   fi
 }
 
@@ -261,17 +265,32 @@ _qvk_human_system() {
   _qvk_human_field report.wireguard "$(_or_unknown "${QVK_SYS[modules.wireguard]:-}")"
 }
 
+_qvk_test_label() {
+  local id=$1
+  if qvk_msg_has "test.$id"; then
+    msg "test.$id"
+  elif [[ $id == https_* ]]; then
+    msg test.https "${id#https_}"
+  elif [[ $id == tcp_rtt_ru_* ]]; then
+    msg test.rtt_ru "${id#tcp_rtt_ru_}"
+  else
+    printf '%s' "$id"
+  fi
+}
+
 _qvk_human_tests() {
   local section=$1 title_key=$2 rec sec id status hmsg hargs n=0
   local -a args
   for rec in "${QVK_TEST_HUMAN[@]}"; do
     IFS=$QVK_US read -r sec id status hmsg hargs <<<"$rec"
     [[ $sec == "$section" ]] || continue
-    if ((n++ == 0)); then printf '\n%s\n' "$(qvk_paint bold "$(msg "$title_key")")"; fi
+    if ((n++ == 0)) && [[ -n $title_key ]]; then
+      printf '\n%s\n' "$(qvk_paint bold "$(msg "$title_key")")"
+    fi
     args=()
     [[ -n $hargs ]] && IFS=$QVK_US read -r -a args <<<"$hargs"
     printf '  %s %s %s\n' "$(_qvk_status_label "$status")" \
-      "$(qvk_pad "$(msg "test.$id")" 22)" "$(msg "${hmsg:-rd.unknown}" "${args[@]}")"
+      "$(qvk_pad "$(_qvk_test_label "$id")" 22)" "$(msg "${hmsg:-rd.unknown}" "${args[@]}")"
   done
 }
 
@@ -286,10 +305,12 @@ _qvk_report_human_raw() {
   fi
   printf '\n'
   _qvk_human_system
+  _qvk_human_tests system ""
   _qvk_human_tests vpn_readiness report.section.readiness
+  _qvk_human_tests network_egress report.section.network
   printf '\n%s\n' "$(qvk_paint bold "$(msg report.verdicts)")"
-  _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" "$QVK_SELF_REASON_KEY" "${QVK_SELF_MISSING[@]}"
-  _qvk_human_verdict client_reachability "$QVK_CLIENT_VERDICT" "$QVK_CLIENT_REASON_KEY" "${QVK_CLIENT_MISSING[@]}"
+  _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" QVK_SELF_REASONS QVK_SELF_MISSING
+  _qvk_human_verdict client_reachability "$QVK_CLIENT_VERDICT" QVK_CLIENT_REASONS QVK_CLIENT_MISSING
 }
 
 qvk_report_human() {

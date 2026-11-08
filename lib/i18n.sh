@@ -37,6 +37,8 @@ msg() {
   printf -- "$fmt" "$@"
 }
 
+qvk_msg_has() { [[ -n ${QVK_MSG_EN[$1]+x} ]]; }
+
 # msg_en <key> [args...] — always English (for JSON fields).
 msg_en() {
   local key=$1 fmt

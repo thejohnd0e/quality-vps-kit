@@ -1,0 +1,41 @@
+# quality-vps-kit endpoint list. One endpoint per line:
+#   <category><TAB or spaces><name><TAB or spaces><https URL>
+# Lines starting with # and empty lines are ignored. Use your own copy with
+# `qvk run --endpoints FILE`. Only https:// URLs are accepted.
+#
+# Categories:
+#   echo4      returns the caller's public IPv4 (plain body or Cloudflare trace "ip=")
+#   echo6      same over IPv6
+#   baseline   neutral HTTPS endpoints for DNS/TCP/TLS/HTTP timing
+#   rtt_ru     hosts in Russia: TCP handshake RTT from the VPS towards Russia.
+#              This is the route from the VPS, NOT reachability from a Russian
+#              client network.
+#   ai, media, ru_hosted   HTTP reachability checks (QVK-04)
+#
+# Keep requests gentle: small documents (robots.txt, 204 endpoints, traces).
+# Verify that the URLs still behave as expected before relying on them.
+
+echo4      cloudflare   https://www.cloudflare.com/cdn-cgi/trace
+echo4      ipify        https://api.ipify.org/
+echo4      aws          https://checkip.amazonaws.com/
+echo6      cloudflare   https://www.cloudflare.com/cdn-cgi/trace
+echo6      ipify        https://api6.ipify.org/
+
+baseline   google       https://www.google.com/generate_204
+baseline   cloudflare   https://www.cloudflare.com/cdn-cgi/trace
+baseline   wikipedia    https://www.wikipedia.org/robots.txt
+
+rtt_ru     yandex       https://ya.ru/
+rtt_ru     vk           https://vk.com/
+rtt_ru     mailru       https://mail.ru/
+
+ai         openai_api   https://api.openai.com/v1/models
+ai         chatgpt      https://chatgpt.com/cdn-cgi/trace
+ai         anthropic    https://api.anthropic.com/v1/models
+ai         gemini       https://gemini.google.com/
+media      youtube      https://www.youtube.com/robots.txt
+media      netflix      https://www.netflix.com/robots.txt
+media      spotify      https://open.spotify.com/robots.txt
+ru_hosted  yandex       https://ya.ru/robots.txt
+ru_hosted  vk           https://vk.com/robots.txt
+ru_hosted  gosuslugi    https://www.gosuslugi.ru/robots.txt
