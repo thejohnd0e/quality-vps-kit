@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  offline-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tool versions
+        run: |
+          bash --version | head -n1
+          shellcheck --version | sed -n 2p
+          python3 --version
+      - name: Offline test suite (no network access required)
+        env:
+          QVK_REQUIRE_SHELLCHECK: "1"
+        run: bash tests/run.sh

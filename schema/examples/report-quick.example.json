@@ -1,0 +1,96 @@
+{
+  "schema_version": "0.1",
+  "tool": { "name": "quality-vps-kit", "version": "0.1.0" },
+  "run": {
+    "id": "6f1c2b9e-3d4a-4c1e-9a77-2f0b8d5e1a90",
+    "started_at": "2026-11-08T12:00:00Z",
+    "finished_at": "2026-11-08T12:00:41Z",
+    "profile": "quick",
+    "load_test_enabled": false,
+    "offline": false,
+    "redacted": false
+  },
+  "environment": { "bash": "5.2.15(1)-release", "curl": "7.88.1", "jq": null },
+  "target": { "id": "target", "ip": "203.0.113.10", "nat": "none" },
+  "probes": [],
+  "system": {
+    "os": { "id": "debian", "version_id": "12", "pretty_name": "Debian GNU/Linux 12 (bookworm)" },
+    "kernel": "6.1.0-27-amd64",
+    "arch": "amd64"
+  },
+  "tests": [
+    {
+      "id": "tcp_connect_example_com",
+      "section": "network_egress",
+      "vantage": "target",
+      "endpoint": "example.com:443",
+      "method": "curl_time_connect",
+      "status": "pass",
+      "diagnosis": null,
+      "reason_code": null,
+      "reason": null,
+      "started_at": "2026-11-08T12:00:05Z",
+      "duration_ms": 412,
+      "timeout_ms": 5000,
+      "samples": 5,
+      "metrics": { "rtt_ms_min": 17.9, "rtt_ms_p50": 18.4, "rtt_ms_max": 23.0, "rtt_ms_p95": null },
+      "traffic_bytes": 6200,
+      "error": null
+    },
+    {
+      "id": "icmp_rtt_example_com",
+      "section": "network_egress",
+      "vantage": "target",
+      "endpoint": "example.com",
+      "method": "ping",
+      "status": "skipped",
+      "diagnosis": null,
+      "reason_code": "tool_missing",
+      "reason": "ping is not installed",
+      "started_at": "2026-11-08T12:00:06Z",
+      "duration_ms": 0,
+      "timeout_ms": null,
+      "samples": 0,
+      "metrics": {},
+      "traffic_bytes": 0,
+      "error": null
+    },
+    {
+      "id": "http_example_service",
+      "section": "http_reachability",
+      "vantage": "target",
+      "endpoint": "https://service.example/",
+      "method": "curl_get",
+      "status": "warn",
+      "diagnosis": null,
+      "http_outcome": "http_denied",
+      "reason_code": "http_403",
+      "reason": "service answered 403 to this IP; this is a service-side decision, not network filtering",
+      "started_at": "2026-11-08T12:00:20Z",
+      "duration_ms": 640,
+      "timeout_ms": 10000,
+      "samples": 1,
+      "metrics": { "dns_ms": 12.1, "connect_ms": 31.5, "tls_ms": 70.2, "ttfb_ms": 210.0, "total_ms": 233.4 },
+      "details": { "http_code": 403, "redirects": 0 },
+      "traffic_bytes": 18400,
+      "error": null
+    }
+  ],
+  "ip_intelligence": { "sources": [], "geo_consensus": null },
+  "summary": {
+    "verdicts": {
+      "target_self_check": {
+        "verdict": "suitable",
+        "reason_code": null,
+        "reasons": ["all v0.1 preset criteria passed"],
+        "missing_evidence": []
+      },
+      "client_reachability": {
+        "verdict": "indeterminate",
+        "reason_code": "no_probe",
+        "reasons": ["standalone run cannot test reachability from a client network; a client-side probe is required (v0.2)"],
+        "missing_evidence": ["client_reachability"]
+      }
+    }
+  }
+}

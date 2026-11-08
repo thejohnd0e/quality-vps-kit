@@ -1,0 +1,17 @@
+# Agent working files stay local (see AGENTS.md)
+AGENTS.md
+CLAUDE.md
+STATUS.md
+DECISIONS.md
+TODO.md
+.omo/
+.claude/
+
+# Local reports and scratch output
+*.report.json
+/out/
+/tmp/
+
+# Python
+__pycache__/
+*.pyc

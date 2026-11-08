@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1",
+  "tool": { "name": "quality-vps-kit", "version": "0.1.0" },
+  "run": {
+    "id": "x",
+    "started_at": "2026-11-08T12:00:00Z",
+    "finished_at": "2026-11-08T12:00:41Z",
+    "profile": "quick",
+    "load_test_enabled": false,
+    "offline": false,
+    "redacted": false
+  },
+  "environment": {},
+  "target": { "id": "target", "ip": null, "nat": "unknown" },
+  "probes": [],
+  "system": { "os": { "id": null, "version_id": null, "pretty_name": null }, "kernel": null, "arch": "amd64" },
+  "tests": [
+    {
+      "id": "tcp_connect_example",
+      "section": "network_egress",
+      "vantage": "target",
+      "endpoint": "example.com:443",
+      "method": "curl_time_connect",
+      "status": "blocked_by_rkn",
+      "diagnosis": null,
+      "reason_code": null,
+      "reason": null,
+      "started_at": "2026-11-08T12:00:05Z",
+      "duration_ms": 1,
+      "timeout_ms": 5000,
+      "samples": 1,
+      "metrics": { "rtt_ms_p50": "N/A" },
+      "traffic_bytes": 0,
+      "error": null
+    }
+  ],
+  "ip_intelligence": { "sources": [], "geo_consensus": null },
+  "summary": {
+    "verdicts": {
+      "target_self_check": { "verdict": "indeterminate", "reason_code": null, "reasons": [], "missing_evidence": [] },
+      "client_reachability": { "verdict": "indeterminate", "reason_code": "no_probe", "reasons": [], "missing_evidence": [] }
+    }
+  }
+}

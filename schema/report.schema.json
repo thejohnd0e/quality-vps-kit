@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/thejohnd0e/quality-vps-kit/schema/report.schema.json",
+  "title": "quality-vps-kit report",
+  "description": "Report produced by qvk (and later qvkctl). Schema 0.x may change incompatibly on a minor bump until 1.0. Unknown values are null, never \"N/A\". Units are encoded in key suffixes: _ms, _s, _mbps, _bytes, _pct, _mb.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "run", "environment", "target", "probes", "system", "tests", "ip_intelligence", "summary"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "quality-vps-kit" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "started_at", "finished_at", "profile", "load_test_enabled", "offline", "redacted"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "started_at": { "$ref": "#/$defs/timestamp" },
+        "finished_at": { "$ref": "#/$defs/timestamp" },
+        "profile": { "enum": ["quick", "full"] },
+        "load_test_enabled": { "type": "boolean" },
+        "offline": { "type": "boolean" },
+        "redacted": { "type": "boolean" }
+      }
+    },
+    "environment": {
+      "description": "Versions of tools that influence measurements; null when absent.",
+      "type": "object",
+      "additionalProperties": { "type": ["string", "null"] }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "ip", "nat"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "ip": { "type": ["string", "null"] },
+        "nat": { "enum": ["none", "one_to_one_suspected", "cgnat_suspected", "unknown"] }
+      }
+    },
+    "probes": {
+      "description": "Client-side vantage points (v0.2). Always empty in v0.1.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/probe" }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "kernel", "arch"],
+      "properties": {
+        "os": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version_id", "pretty_name"],
+          "properties": {
+            "id": { "type": ["string", "null"] },
+            "version_id": { "type": ["string", "null"] },
+            "pretty_name": { "type": ["string", "null"] }
+          }
+        },
+        "kernel": { "type": ["string", "null"] },
+        "arch": { "type": "string" }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/test" }
+    },
+    "ip_intelligence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources", "geo_consensus"],
+      "properties": {
+        "sources": { "type": "array", "items": { "type": "object" } },
+        "geo_consensus": { "type": ["object", "null"] }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdicts"],
+      "properties": {
+        "verdicts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target_self_check", "client_reachability"],
+          "properties": {
+            "target_self_check": { "$ref": "#/$defs/verdict" },
+            "client_reachability": { "$ref": "#/$defs/verdict" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+    },
+    "section": {
+      "enum": ["system", "vpn_readiness", "network_egress", "client_reachability", "throughput", "ip_intelligence", "http_reachability", "diagnostics"]
+    },
+    "status": { "enum": ["pass", "warn", "fail", "unknown", "skipped", "error"] },
+    "diagnosis": {
+      "enum": ["none", "suspected_filtering", "suspected_throttling", "unreachable", "service_missing", "inconclusive", null]
+    },
+    "http_outcome": {
+      "enum": ["reachable", "network_error", "tls_error", "http_denied", "rate_limited", "unknown", null]
+    },
+    "reason_code": {
+      "enum": [
+        "tool_missing", "not_root", "offline_mode", "no_api_key", "rate_limited", "timeout",
+        "dns_failure", "tcp_refused", "tls_failure", "http_403", "http_429", "not_implemented",
+        "no_probe", "no_responder", "load_not_allowed", "unsupported_platform", "conflict",
+        "insufficient_samples", "not_applicable", "internal_error", null
+      ]
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "reason_code", "reasons", "missing_evidence"],
+      "properties": {
+        "verdict": { "enum": ["suitable", "unsuitable", "indeterminate"] },
+        "reason_code": { "$ref": "#/$defs/reason_code" },
+        "reasons": { "type": "array", "items": { "type": "string" } },
+        "missing_evidence": { "type": "array", "items": { "$ref": "#/$defs/section" } }
+      }
+    },
+    "metric_value": { "type": ["number", "null"] },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "section", "vantage", "endpoint", "method", "status", "diagnosis", "reason_code",
+        "reason", "started_at", "duration_ms", "timeout_ms", "samples", "metrics", "traffic_bytes", "error"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "section": { "$ref": "#/$defs/section" },
+        "vantage": { "type": "string", "pattern": "^(target|probe:[a-z0-9_-]+)$" },
+        "endpoint": { "type": ["string", "null"] },
+        "method": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "diagnosis": { "$ref": "#/$defs/diagnosis" },
+        "http_outcome": { "$ref": "#/$defs/http_outcome" },
+        "reason_code": { "$ref": "#/$defs/reason_code" },
+        "reason": { "type": ["string", "null"] },
+        "started_at": { "$ref": "#/$defs/timestamp" },
+        "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "timeout_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "samples": { "type": ["integer", "null"], "minimum": 0 },
+        "metrics": {
+          "description": "Numeric metrics only; unit in key suffix.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/metric_value" }
+        },
+        "details": {
+          "description": "Non-numeric facts (strings, flags, lists) relevant to the test.",
+          "type": "object"
+        },
+        "traffic_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["probe_id", "access_type"],
+      "properties": {
+        "probe_id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "access_type": { "enum": ["fixed", "mobile", "unknown"] },
+        "operator": { "type": ["string", "null"] },
+        "asn": { "type": ["integer", "null"] },
+        "country": { "type": ["string", "null"] },
+        "source": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
