@@ -12,6 +12,20 @@ Read-only оценка нового VPS **до** того, как вы сдел�
 
 > English version: [README.md](README.md)
 
+## Часть семейства VPS-китов
+
+`quality-vps-kit` — один из нескольких независимых инструментов одного процесса: сначала
+оценить VPS, затем поднять на нём VPN/proxy-сервисы.
+
+| Проект | Назначение |
+|---|---|
+| **quality-vps-kit** (этот репозиторий) | read-only оценка нового VPS |
+| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | установщик сервера VLESS/Reality и управление клиентами |
+| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | установщик сервера AmneziaWG и управление клиентами |
+| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | установщик сервера Hysteria2 и управление клиентами |
+
+Киты независимы: `qvk` их не изменяет и не требует.
+
 `qvk` отвечает на вопросы: что это за сервер (CPU, память, виртуализация, MTU, NAT),
 готов ли он к VPN (AES, BBR, UDP-буферы, занятые порты, `/dev/net/tun`), работает ли
 его собственный выход в интернет (внешний IP, DNS, HTTPS, часы), как мир видит его IP
@@ -139,20 +153,6 @@ VPS. Подробнее: [docs/security.md](docs/security.md).
 Нагрузочные тесты (`--allow-load`), отчёты traceroute/`mtr`, контроллер
 `qvkctl`, клиентские probe и `compare` (v0.2), реальные тесты VPN-туннелей (v0.3),
 Markdown-отчёты, пользовательский файл критериев. План: [docs/roadmap.md](docs/roadmap.md).
-
-## Часть семейства VPS-китов
-
-`quality-vps-kit` — один из нескольких независимых инструментов одного процесса: сначала
-оценить VPS, затем поднять на нём VPN/proxy-сервисы.
-
-| Проект | Назначение |
-|---|---|
-| **quality-vps-kit** (этот репозиторий) | read-only оценка нового VPS |
-| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | установщик сервера VLESS/Reality и управление клиентами |
-| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | установщик сервера AmneziaWG и управление клиентами |
-| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | установщик сервера Hysteria2 и управление клиентами |
-
-Киты независимы: `qvk` их не изменяет и не требует.
 
 ## Тесты
 

@@ -12,6 +12,20 @@ Log in as root, run one command, get a readable report and a machine-readable JS
 
 > Русская версия: [README.ru.md](README.ru.md)
 
+## Part of the VPS kit family
+
+`quality-vps-kit` is one of several independent tools for the same workflow: evaluate a
+VPS first, then set up VPN/proxy services on it.
+
+| Project | Purpose |
+|---|---|
+| **quality-vps-kit** (this repo) | read-only evaluation of a fresh VPS |
+| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | VLESS/Reality server installer and client management |
+| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | AmneziaWG server installer and client management |
+| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | Hysteria2 server installer and client management |
+
+The kits are independent: `qvk` does not modify or require any of them.
+
 `qvk` answers: what is this server (CPU, memory, virtualization, MTU, NAT), is it ready
 for a VPN (AES, BBR, UDP buffers, busy ports, `/dev/net/tun`), does its own internet
 access work (egress IP, DNS, HTTPS, clock), how does the world see its IP (ASN, prefix,
@@ -169,20 +183,6 @@ Load/throughput tests (`--allow-load`), traceroute/`mtr` reports, the
 controller `qvkctl`, client-side probes and `compare` (v0.2), real VPN tunnel tests
 (v0.3), Markdown reports, a user-defined criteria file. Planned work:
 [docs/roadmap.md](docs/roadmap.md).
-
-## Part of the VPS kit family
-
-`quality-vps-kit` is one of several independent tools for the same workflow: evaluate a
-VPS first, then set up VPN/proxy services on it.
-
-| Project | Purpose |
-|---|---|
-| **quality-vps-kit** (this repo) | read-only evaluation of a fresh VPS |
-| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | VLESS/Reality server installer and client management |
-| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | AmneziaWG server installer and client management |
-| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | Hysteria2 server installer and client management |
-
-The kits are independent: `qvk` does not modify or require any of them.
 
 ## Tests
 
