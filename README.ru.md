@@ -140,6 +140,20 @@ VPS. Подробнее: [docs/security.md](docs/security.md).
 `qvkctl`, клиентские probe и `compare` (v0.2), реальные тесты VPN-туннелей (v0.3),
 Markdown-отчёты, пользовательский файл критериев. План: [docs/roadmap.md](docs/roadmap.md).
 
+## Часть семейства VPS-китов
+
+`quality-vps-kit` — один из нескольких независимых инструментов одного процесса: сначала
+оценить VPS, затем поднять на нём VPN/proxy-сервисы.
+
+| Проект | Назначение |
+|---|---|
+| **quality-vps-kit** (этот репозиторий) | read-only оценка нового VPS |
+| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | установщик сервера VLESS/Reality и управление клиентами |
+| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | установщик сервера AmneziaWG и управление клиентами |
+| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | установщик сервера Hysteria2 и управление клиентами |
+
+Киты независимы: `qvk` их не изменяет и не требует.
+
 ## Тесты
 
 `bash tests/run.sh` выполняет проверку синтаксиса, ShellCheck (если установлен), проверку
