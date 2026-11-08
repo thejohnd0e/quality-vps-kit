@@ -131,8 +131,9 @@ controller `qvkctl`, client-side probes and `compare` (v0.2), real VPN tunnel te
 
 `bash tests/run.sh` runs syntax checks, ShellCheck (if installed), the schema check and
 unit tests with fixtures. It never touches the network and does not need root. The
-tests have been run on Git Bash (Windows) and Debian 12 (WSL); **a real VPS run is a
-separate manual step** and is not covered by CI.
+tests have been run on Git Bash (Windows) and Debian 12 (WSL), and `qvk run --profile full`
+was run as real root on a Debian 13 lab VM. **Runs on hosted VPSes are a separate manual
+step** and are not covered by CI.
 
 ## License
 

@@ -11,8 +11,12 @@ AbuseIPDB), geo consensus, HTTP reachability of services, per-area verdicts,
 
 Known gaps before calling v0.1 final:
 
-- A run on real VPS hosts (Debian 12/13, Ubuntu 22.04/24.04, amd64/arm64) has not been
-  done; tests used fixtures and WSL.
+- Real runs so far: a Debian 13 amd64 VirtualBox lab VM as real root (`--profile full`,
+  exit 0, valid JSON, no leftovers) and Debian 12 on WSL. Not yet run on hosted VPSes
+  (Debian 12, Ubuntu 22.04/24.04, arm64). The lab VM had no `tracepath`, so path MTU
+  was only exercised through fixtures.
+- ICMP replies were absent on both lab networks, so the ICMP RTT success path has only
+  been verified with fixtures.
 - The AbuseIPDB adapter is verified against fixtures only.
 - Default endpoint URLs in `config/endpoints.tsv` need a periodic check.
 
