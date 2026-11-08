@@ -33,8 +33,19 @@ msg() {
   else
     fmt=${QVK_MSG_EN[$key]:-$key}
   fi
+  _qvk_printf_fmt "$fmt" "$@"
+}
+
+# printf with exactly as many arguments as the format has conversions; bash's
+# printf would otherwise recycle the format for surplus arguments.
+_qvk_printf_fmt() {
+  local fmt=$1 n
+  shift
+  n=${fmt//%%/}
+  n=${n//[^%]/}
+  n=${#n}
   # shellcheck disable=SC2059  # formats come from our own catalogs
-  printf -- "$fmt" "$@"
+  printf -- "$fmt" "${@:1:n}"
 }
 
 qvk_msg_has() { [[ -n ${QVK_MSG_EN[$1]+x} ]]; }
@@ -44,6 +55,5 @@ msg_en() {
   local key=$1 fmt
   shift
   fmt=${QVK_MSG_EN[$key]:-$key}
-  # shellcheck disable=SC2059
-  printf -- "$fmt" "$@"
+  _qvk_printf_fmt "$fmt" "$@"
 }

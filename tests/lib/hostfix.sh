@@ -4,7 +4,7 @@
 
 # Commands qvk may call while collecting inventory. Each gets the generic stub,
 # so real tools on the developer's machine are never executed.
-HOSTFIX_COMMANDS=(ip df ss systemd-detect-virt timedatectl nft iptables ufw firewall-cmd curl nproc)
+HOSTFIX_COMMANDS=(ip df ss systemd-detect-virt timedatectl nft iptables ufw firewall-cmd curl nproc tracepath ping dig)
 
 # Read-only command lines qvk is allowed to run (extended regexes over "cmd args").
 HOSTFIX_ALLOWED=(
@@ -22,6 +22,9 @@ HOSTFIX_ALLOWED=(
   '^ufw status$'
   '^firewall-cmd --state$'
   '^nproc$'
+  '^tracepath -n -m 12 [A-Za-z0-9.-]+$'
+  '^ping -n -c [0-9]+ -W 2 [A-Za-z0-9.-]+$'
+  '^dig \+short \+time=3 \+tries=1 (@[0-9.]+ )?[A-Za-z0-9.-]+ A$'
 )
 
 # use_host_fixture <name> — exports the environment for qvk.

@@ -45,8 +45,8 @@ Unknown or untested values are JSON `null`, never `0`, `100` or `"N/A"`.
 - **virtualization**: `systemd-detect-virt`, else `/proc/user_beancounters`,
   `/run/systemd/container`, `/.dockerenv`, else the CPU `hypervisor` flag (`vm`).
 - **memory / disk / load**: `/proc/meminfo`, `df -Pk /`, `/proc/loadavg`.
-- **interface MTU**: from `ip link`. It is not the path MTU, which needs `tracepath`
-  (profile `full`, later slice).
+- **interface MTU**: from `ip link`. It is not the path MTU; the path MTU is measured
+  separately by `tracepath` in profile `full` (see below).
 - **addresses**: classified `public`, `private`, `cgnat` (100.64.0.0/10), `link_local`,
   `loopback`; IPv6 `global` or `ula`.
 - **firewall**: only presence and counts (nftables tables, iptables rules, ufw/firewalld
@@ -87,6 +87,24 @@ Unknown or untested values are JSON `null`, never `0`, `100` or `"N/A"`.
 - **Clock offset**: median over the `Date` headers of at least 3 distinct hosts,
   corrected for request latency; resolution is 1 s. `|offset| > 30 s` is `warn`
   because TLS and REALITY handshakes can fail on a wrong clock.
+
+### Extra diagnostics (profile `full`, optional tools)
+
+- **Path MTU** (`tracepath -n -m 12` towards the first baseline host): the last `pmtu`
+  value. Below the interface MTU → `warn` with advice to size the VPN tunnel MTU
+  accordingly. The probe is UDP; a value equal to the interface MTU is the common case.
+- **ICMP RTT** (`ping -c 5`) towards the Russia-hosted hosts: min/avg/max and packet loss
+  over five probes. No reply is `unknown` / `icmp_no_reply`, never `fail`: ICMP is often
+  filtered and says nothing about TCP or UDP. Five probes are not a stable loss figure.
+- **Resolver comparison** (`dig +short`): the system resolver versus 1.1.1.1 and 8.8.8.8
+  for the baseline names. Only the *presence* of an answer is compared (CDN names
+  legitimately differ per resolver). A name the system resolver cannot resolve while
+  public resolvers can is `warn` / `dns_failure`: a resolver problem or DNS interference,
+  not a verdict on routes. Querying public resolvers discloses the baseline host names
+  to them.
+
+Missing tools give `skipped` / `tool_missing`; `--offline` gives `skipped` /
+`offline_mode`. None of these tests changes a verdict.
 
 ### IP intelligence
 

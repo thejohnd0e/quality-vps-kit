@@ -2,7 +2,8 @@
 
 ## v0.1 — standalone `qvk` (this release line)
 
-Done: `doctor`, `run --profile quick|full` (no load), inventory, VPN-readiness facts,
+Done: `doctor`, `run --profile quick|full` (no load; `full` adds 20 RTT samples, path MTU,
+ICMP RTT and a resolver comparison when the tools exist), inventory, VPN-readiness facts,
 egress IP with conflict detection, NAT hint, DNS/TCP/TLS/HTTP timing via `curl -w`,
 RTT towards Russia-hosted endpoints, clock offset, IP intelligence (RIPEstat, IPinfo,
 AbuseIPDB), geo consensus, HTTP reachability of services, per-area verdicts,
@@ -12,7 +13,6 @@ Known gaps before calling v0.1 final:
 
 - A run on real VPS hosts (Debian 12/13, Ubuntu 22.04/24.04, amd64/arm64) has not been
   done; tests used fixtures and WSL.
-- `full` does not yet add `tracepath`/path MTU or extended DNS (resolver comparison).
 - The AbuseIPDB adapter is verified against fixtures only.
 - Default endpoint URLs in `config/endpoints.tsv` need a periodic check.
 

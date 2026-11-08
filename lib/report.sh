@@ -292,6 +292,8 @@ _qvk_test_label() {
     msg test.http "$cat" "${rest#"${cat}"_}"
   elif [[ $id == https_* ]]; then
     msg test.https "${id#https_}"
+  elif [[ $id == icmp_rtt_ru_* ]]; then
+    msg test.icmp_rtt "${id#icmp_rtt_ru_}"
   elif [[ $id == tcp_rtt_ru_* ]]; then
     msg test.rtt_ru "${id#tcp_rtt_ru_}"
   else

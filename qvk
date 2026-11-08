@@ -33,6 +33,8 @@ source "$QVK_LIB/readiness.sh"
 source "$QVK_LIB/net.sh"
 # shellcheck source=lib/egress.sh
 source "$QVK_LIB/egress.sh"
+# shellcheck source=lib/diag.sh
+source "$QVK_LIB/diag.sh"
 # shellcheck source=lib/intel.sh
 source "$QVK_LIB/intel.sh"
 # shellcheck source=lib/httpcheck.sh
@@ -261,6 +263,7 @@ cmd_run() {
   qvk_inventory_collect
   qvk_readiness_evaluate
   qvk_egress_run
+  qvk_diag_run
   qvk_intel_run
   qvk_progress "$(msg progress.http)"
   qvk_http_run

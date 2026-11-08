@@ -60,7 +60,7 @@ qvk version | qvk --help
 
 | Опция | Смысл |
 |---|---|
-| `--profile quick\|full` | `full` даёт больше замеров RTT (20, чтобы был p95). Нагрузочных тестов в v0.1 нет |
+| `--profile quick\|full` | `full` даёт 20 замеров RTT (чтобы был p95), path MTU, ICMP RTT и сравнение резолверов (нужны `tracepath`, `ping`, `dig`). Нагрузочных тестов в v0.1 нет |
 | `--format human\|json` | по умолчанию human; при `--output` — json |
 | `--output ФАЙЛ` | записать отчёт в `ФАЙЛ` (права 0600) |
 | `--offline` | вообще без внешних запросов; сетевые проверки получают `skipped` |
@@ -93,7 +93,7 @@ VPS. Подробнее: [docs/security.md](docs/security.md).
 
 ## Пока не реализовано
 
-Нагрузочные тесты (`--allow-load`), path MTU и traceroute (`tracepath`), контроллер
+Нагрузочные тесты (`--allow-load`), отчёты traceroute/`mtr`, контроллер
 `qvkctl`, клиентские probe и `compare` (v0.2), реальные тесты VPN-туннелей (v0.3),
 Markdown-отчёты, пользовательский файл критериев. План: [docs/roadmap.md](docs/roadmap.md).
 

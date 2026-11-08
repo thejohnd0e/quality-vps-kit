@@ -60,7 +60,7 @@ qvk version | qvk --help
 
 | Option | Meaning |
 |---|---|
-| `--profile quick\|full` | `full` adds more RTT samples (20, so p95 exists). No load tests in v0.1 |
+| `--profile quick\|full` | `full` adds 20 RTT samples (so p95 exists), path MTU, ICMP RTT and a resolver comparison (needs `tracepath`, `ping`, `dig`). No load tests in v0.1 |
 | `--format human\|json` | default: human; `json` when `--output` is given |
 | `--output FILE` | write the report to `FILE` (mode 0600) |
 | `--offline` | no external request at all; network checks become `skipped` |
@@ -122,7 +122,7 @@ See [docs/security.md](docs/security.md).
 
 ## Not implemented yet
 
-Load/throughput tests (`--allow-load`), path MTU and traceroute (`tracepath`), the
+Load/throughput tests (`--allow-load`), traceroute/`mtr` reports, the
 controller `qvkctl`, client-side probes and `compare` (v0.2), real VPN tunnel tests
 (v0.3), Markdown reports, a user-defined criteria file. Planned work:
 [docs/roadmap.md](docs/roadmap.md).

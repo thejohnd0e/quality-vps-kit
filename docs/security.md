@@ -13,7 +13,7 @@ change anything. `qvk` does not call `sudo` and creates no service user.
 systemd units or VPN configuration. It opens no listening sockets and starts no
 background processes. Local commands it may run (all read-only, each with a timeout):
 
-`ip -o route|link|addr show`, `df -Pk /`, `ss -H -ltnup`, `systemd-detect-virt`,
+`ip -o route|link|addr show`, `df -Pk /`, `tracepath`, `ping`, `dig` (profile `full`), `ss -H -ltnup`, `systemd-detect-virt`,
 `timedatectl show`, `nft list ruleset`, `iptables -V|-S`, `ufw status`,
 `firewall-cmd --state`, `nproc`, `uname`, `curl`.
 
@@ -29,6 +29,8 @@ User-Agent, no cookies and no redirects followed:
 |---|---|
 | echo services (Cloudflare trace, ipify, AWS checkip) | the VPS's public IP (that is their purpose) |
 | RIPEstat, IPinfo, AbuseIPDB | the VPS's public IP |
+| public DNS resolvers 1.1.1.1 and 8.8.8.8 (profile `full`, `dig`) | the VPS's public IP and the baseline host names |
+| `tracepath`/`ping` targets (baseline and Russia-hosted hosts, profile `full`) | the VPS's public IP |
 | baseline, `rtt_ru`, `ai`, `media`, `ru_hosted` endpoints from `config/endpoints.tsv` | the VPS's public IP and that a request was made to that host |
 
 Nothing from the report is uploaded anywhere; the report is written locally.

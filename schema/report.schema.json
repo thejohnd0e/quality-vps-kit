@@ -681,6 +681,7 @@
         "insufficient_samples",
         "insufficient_data",
         "criteria_failed",
+        "icmp_no_reply",
         "middlebox_suspected",
         "not_applicable",
         "internal_error",
