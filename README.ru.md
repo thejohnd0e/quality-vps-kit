@@ -1,30 +1,23 @@
-# quality-vps-kit
+# Quality VPS Kit
 
 [EN](README.md) · **RU**
 
-[![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases)
-[![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE)
-![Shell: Bash](https://img.shields.io/badge/shell-bash%20%E2%89%A5%204.4-4EAA25?logo=gnubash&logoColor=white)
-![Platform](https://img.shields.io/badge/Debian%2012%2F13%20%C2%B7%20Ubuntu%2022.04%2F24.04-amd64%20%7C%20arm64-blue)
-![Read-only](https://img.shields.io/badge/changes%20nothing-read--only-success)
+[![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE) [![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases) ![Shell](https://img.shields.io/badge/shell-bash-4EAA25?logo=gnubash&logoColor=white) ![Platform](https://img.shields.io/badge/platform-Debian%20%7C%20Ubuntu-A81D33?logo=debian&logoColor=white) ![Mode](https://img.shields.io/badge/mode-read--only-success)
 
-Read-only оценка нового VPS **до** того, как вы сделаете из него VPN/proxy-сервер.
-Войдите под root, запустите одну команду, получите читаемый отчёт и JSON для машин.
+Read-only оценка нового VPS **до** того, как вы сделаете из него VPN/proxy-сервер. Войдите под
+root, запустите одну команду, получите читаемый отчёт и JSON для машин.
 
-## Часть семейства VPS-китов
+## Related Projects
 
-`quality-vps-kit` — один из нескольких независимых инструментов одного процесса: сначала
-оценить VPS, затем поднять на нём VPN/proxy-сервисы.
+Эти проекты дополняют друг друга: `qvk` сначала проверяет сервер, затем киты поднимают на нём
+VPN/proxy-сервисы. Они независимы: `qvk` их не изменяет и не требует.
 
-| Проект | Назначение |
-|---|---|
-| **quality-vps-kit** (этот репозиторий) | read-only оценка нового VPS |
-| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | установщик сервера VLESS/Reality и управление клиентами |
-| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | установщик сервера AmneziaWG и управление клиентами |
-| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | установщик сервера Hysteria2 и управление клиентами |
-
-Киты независимы: `qvk` их не изменяет и не требует.
+- [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit): установщик и менеджер клиентов
+  сервера **Xray VLESS + REALITY + Vision** по TCP.
+- [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit): установщик и менеджер клиентов
+  сервера **AmneziaWG** по UDP.
+- [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit): установщик и менеджер клиентов
+  сервера **Hysteria2** (QUIC поверх UDP).
 
 `qvk` отвечает на вопросы: что это за сервер (CPU, память, виртуализация, MTU, NAT),
 готов ли он к VPN (AES, BBR, UDP-буферы, занятые порты, `/dev/net/tun`), работает ли
