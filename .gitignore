@@ -7,6 +7,9 @@ TODO.md
 .omo/
 .claude/
 
+# Specifications (TZ) stay local
+quality-vps-kit-TZ-*.md
+
 # Local reports and scratch output
 *.report.json
 /out/
