@@ -1,0 +1,4 @@
+OS=ubuntu-24.04
+ARCH=aarch64
+TUN=absent
+HIDE="ss systemd-detect-virt nft iptables ufw firewall-cmd timedatectl"

@@ -25,6 +25,9 @@ for t in ip curl; do
 done
 export PATH="$WORK/bin:$PATH"
 unset NO_COLOR LANG LC_ALL LC_MESSAGES
+# CLI tests run inventory against the real (developer/CI) host, read-only;
+# skip the 2 s steal sampling to keep them fast.
+export QVK_TEST_STEAL_SAMPLE_S=0
 
 # Common environment for a supported root run.
 as_root_debian() {

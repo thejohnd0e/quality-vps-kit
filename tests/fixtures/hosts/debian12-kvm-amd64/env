@@ -1,0 +1,4 @@
+OS=debian-12
+ARCH=x86_64
+TUN=present
+HIDE="ufw firewall-cmd"

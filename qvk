@@ -21,6 +21,14 @@ source "$QVK_LIB/json.sh"
 source "$QVK_LIB/i18n.sh"
 # shellcheck source=lib/platform.sh
 source "$QVK_LIB/platform.sh"
+# shellcheck source=lib/redact.sh
+source "$QVK_LIB/redact.sh"
+# shellcheck source=lib/tests.sh
+source "$QVK_LIB/tests.sh"
+# shellcheck source=lib/inventory.sh
+source "$QVK_LIB/inventory.sh"
+# shellcheck source=lib/readiness.sh
+source "$QVK_LIB/readiness.sh"
 # shellcheck source=lib/report.sh
 source "$QVK_LIB/report.sh"
 
@@ -234,7 +242,9 @@ cmd_run() {
   QVK_RUN_ID=$(qvk_new_run_id)
   QVK_STARTED_AT=$(qvk_now_utc)
 
-  # Measurement modules are added in later slices; they append to QVK_TESTS.
+  qvk_progress "$(msg progress.inventory)"
+  qvk_inventory_collect
+  qvk_readiness_evaluate
 
   QVK_FINISHED_AT=$(qvk_now_utc)
 

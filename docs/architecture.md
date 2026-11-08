@@ -21,6 +21,10 @@ lib/common.sh           environment (LC_ALL=C, umask 077), exit codes, temp dir,
 lib/json.sh             JSON emitter in pure Bash
 lib/i18n.sh             message lookup; catalogs in lib/i18n/{en,ru}.sh
 lib/platform.sh         os-release parsing, arch, root check, tool detection
+lib/inventory.sh        read-only system facts -> QVK_SYS (QVK-01)
+lib/readiness.sh        VPN-readiness checks over QVK_SYS -> tests[] (QVK-01a)
+lib/tests.sh            qvk_add_test: test records for JSON and human output
+lib/redact.sh           --redact-ip: registered addresses -> <ip-N>
 lib/report.sh           report assembly (JSON) and human rendering
 schema/                 JSON Schema of the report + reference example(s)
 tests/run.sh            all offline checks (syntax, ShellCheck, schema, unit tests)
@@ -28,9 +32,8 @@ tests/tools/            stdlib-only helpers (schema validator)
 tests/fixtures/         os-release files, invalid reports, later: captured command output
 ```
 
-Measurement modules (`inventory.sh`, `readiness.sh`, `network.sh`, `ip-intel.sh`)
-are added in later slices. Each appends test objects to `QVK_TESTS` and never
-prints to stdout.
+Network modules (`network.sh`, `ip-intel.sh`) are added in later slices. Every
+module appends test objects through `qvk_add_test` and never prints to stdout.
 
 ## Decisions
 
@@ -124,16 +127,39 @@ Environment variables used only by tests, never needed in production:
 | `QVK_TEST_ARCH` | `uname -m` |
 | `QVK_TEST_EUID` | `$EUID` |
 | `QVK_TEST_TUN` | `/dev/net/tun` |
+| `QVK_TEST_ROOTFS` | prefix for every file read by the inventory (`/proc`, `/sys`, `/lib/modules`, `/run`) |
+| `QVK_TEST_STEAL_SAMPLE_S` | steal sampling interval (default 2 s; tests use 0) |
+| `QVK_TEST_HIDE_TOOLS` | tools to treat as not installed |
 
 Setting them cannot grant privileges: a faked root only makes qvk attempt reads
 that the real user may not be allowed to perform.
 
+Host fixtures (`tests/fixtures/hosts/<name>/`) hold a fake `rootfs/`, captured
+command output in `cmd/` and an `env` file. `tests/fixtures/stub-cmd.sh` replaces
+every command the inventory may call and logs each invocation; tests assert that
+only allow-listed read-only command lines were executed.
+
 ### D9. Redaction
 
-`--redact-ip` is accepted from v0.1 and recorded in `run.redacted`. The skeleton
-report contains no IP addresses yet; the redaction pass (stable `<ip-N>` labels
-across all fields, prefix removed, ASN/country kept) lands together with the
-first module that records an IP, with a test that no original IP substring remains.
+`--redact-ip` replaces every *registered* address (`qvk_register_ip`: the target's
+interface addresses now, egress/probe/client addresses later) with a stable label
+`<ip-N>` in the final JSON and human output. Matching respects address boundaries
+(`1.2.3.4` never rewrites part of `11.2.3.45`); longer addresses are replaced first.
+Public endpoints (resolvers, test hosts) are not registered and stay readable.
+Loopback is never registered. Tests assert that no original address substring
+remains in a redacted report.
+
+### D10. Facts vs. checks
+
+`system` holds facts without a verdict (CPU, memory, steal, firewall presence, ...).
+A value gets a `status` only as a test in `tests[]` with a documented rule
+(`vpn_readiness`: AES, tun, BBR, UDP buffers, VPN ports). One steal sample is a
+fact, never a verdict. Firewall rule contents are never copied, only counts.
+
+Readiness rules: missing `/dev/net/tun` is `warn`, not `fail` — Xray and kernel
+WireGuard work without it; userspace VPNs (amneziawg-go, wireguard-go) do not.
+UDP buffers below 16 MiB are `warn` with the recommended `sysctl` printed, never
+applied. VPN ports already in use are `warn` (an installed kit is a normal reason).
 
 ## Not yet decided
 

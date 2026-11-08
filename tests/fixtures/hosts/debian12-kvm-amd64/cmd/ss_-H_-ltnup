@@ -1,0 +1,5 @@
+tcp   LISTEN 0      128          0.0.0.0:22         0.0.0.0:*    users:(("sshd",pid=601,fd=3))
+tcp   LISTEN 0      128             [::]:22            [::]:*    users:(("sshd",pid=601,fd=4))
+tcp   LISTEN 0      4096               *:443              *:*    users:(("xray",pid=812,fd=7))
+udp   UNCONN 0      0            0.0.0.0:51820      0.0.0.0:*
+udp   UNCONN 0      0          127.0.0.1:323        0.0.0.0:*    users:(("chronyd",pid=540,fd=5))

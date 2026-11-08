@@ -52,9 +52,13 @@
       "items": { "$ref": "#/$defs/probe" }
     },
     "system": {
+      "description": "Inventory facts of the target. Every key is always present; unknown = null. Facts carry no verdict; checks with a status live in tests[].",
       "type": "object",
       "additionalProperties": false,
-      "required": ["os", "kernel", "arch"],
+      "required": [
+        "os", "kernel", "arch", "virtualization", "cpu", "memory", "disk_root", "load", "uptime_s",
+        "steal", "network", "time", "kernel_net", "modules", "firewall"
+      ],
       "properties": {
         "os": {
           "type": "object",
@@ -67,7 +71,122 @@
           }
         },
         "kernel": { "type": ["string", "null"] },
-        "arch": { "type": "string" }
+        "arch": { "type": "string" },
+        "virtualization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "container", "source"],
+          "properties": {
+            "type": { "type": ["string", "null"], "description": "systemd-detect-virt vocabulary, 'vm' for an unidentified hypervisor, 'none' for bare metal" },
+            "container": { "type": ["boolean", "null"] },
+            "source": { "type": ["string", "null"] }
+          }
+        },
+        "cpu": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "vcpus", "aes", "clmul"],
+          "properties": {
+            "model": { "type": ["string", "null"] },
+            "vcpus": { "type": ["integer", "null"], "minimum": 0 },
+            "aes": { "type": ["boolean", "null"] },
+            "clmul": { "type": ["boolean", "null"] }
+          }
+        },
+        "memory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total_mb", "available_mb", "swap_total_mb"],
+          "properties": {
+            "total_mb": { "type": ["integer", "null"], "minimum": 0 },
+            "available_mb": { "type": ["integer", "null"], "minimum": 0 },
+            "swap_total_mb": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "disk_root": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total_mb", "available_mb"],
+          "properties": {
+            "total_mb": { "type": ["integer", "null"], "minimum": 0 },
+            "available_mb": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "load": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["load1", "load5", "load15"],
+          "properties": {
+            "load1": { "type": ["number", "null"], "minimum": 0 },
+            "load5": { "type": ["number", "null"], "minimum": 0 },
+            "load15": { "type": ["number", "null"], "minimum": 0 }
+          }
+        },
+        "uptime_s": { "type": ["integer", "null"], "minimum": 0 },
+        "steal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pct", "sample_s"],
+          "properties": {
+            "pct": { "type": ["number", "null"], "minimum": 0 },
+            "sample_s": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default_iface", "interface_mtu", "ipv4_addresses", "ipv6_addresses", "ipv6_default_route"],
+          "properties": {
+            "default_iface": { "type": ["string", "null"] },
+            "interface_mtu": { "type": ["integer", "null"], "minimum": 0 },
+            "ipv4_addresses": { "type": "array", "items": { "$ref": "#/$defs/if_address" } },
+            "ipv6_addresses": { "type": "array", "items": { "$ref": "#/$defs/if_address" } },
+            "ipv6_default_route": { "type": ["boolean", "null"] }
+          }
+        },
+        "time": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ntp_synchronized"],
+          "properties": {
+            "ntp_synchronized": { "type": ["boolean", "null"] }
+          }
+        },
+        "kernel_net": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tcp_congestion_control", "default_qdisc", "bbr", "rmem_max_bytes", "wmem_max_bytes", "ip_forward"],
+          "properties": {
+            "tcp_congestion_control": { "type": ["string", "null"] },
+            "default_qdisc": { "type": ["string", "null"] },
+            "bbr": { "enum": ["available", "absent", null] },
+            "rmem_max_bytes": { "type": ["integer", "null"], "minimum": 0 },
+            "wmem_max_bytes": { "type": ["integer", "null"], "minimum": 0 },
+            "ip_forward": { "type": ["boolean", "null"] }
+          }
+        },
+        "modules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["wireguard", "amneziawg_loaded"],
+          "properties": {
+            "wireguard": { "enum": ["loaded", "available", "absent", null] },
+            "amneziawg_loaded": { "type": ["boolean", "null"] }
+          }
+        },
+        "firewall": {
+          "description": "Presence of firewall state only; rule contents are never copied into the report.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nftables_tables", "iptables_backend", "iptables_rules", "ufw_active", "firewalld_active"],
+          "properties": {
+            "nftables_tables": { "type": ["integer", "null"], "minimum": 0 },
+            "iptables_backend": { "enum": ["nf_tables", "legacy", null] },
+            "iptables_rules": { "type": ["integer", "null"], "minimum": 0 },
+            "ufw_active": { "type": ["boolean", "null"] },
+            "firewalld_active": { "type": ["boolean", "null"] }
+          }
+        }
       }
     },
     "tests": {
@@ -135,6 +254,16 @@
       }
     },
     "metric_value": { "type": ["number", "null"] },
+    "if_address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["address", "prefix_len", "class"],
+      "properties": {
+        "address": { "type": "string", "minLength": 1 },
+        "prefix_len": { "type": ["integer", "null"], "minimum": 0 },
+        "class": { "enum": ["private", "cgnat", "loopback", "link_local", "public", "ula", "global"] }
+      }
+    },
     "test": {
       "type": "object",
       "additionalProperties": false,

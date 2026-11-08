@@ -1,0 +1,1 @@
+7: eth0    inet 10.0.3.15/24 metric 100 brd 10.0.3.255 scope global dynamic eth0\       valid_lft 3200sec preferred_lft 3200sec

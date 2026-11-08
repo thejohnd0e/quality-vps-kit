@@ -1,0 +1,1 @@
+default via fe80::1 dev eth0 proto static metric 1024 onlink pref medium

@@ -24,6 +24,12 @@ qvk_init_env() {
 
 qvk_log() { printf 'qvk: %s\n' "$*" >&2; }
 
+# Progress goes to stderr and only when stderr is a terminal.
+qvk_progress() {
+  [[ -t 2 ]] || return 0
+  printf 'qvk: %s\n' "$*" >&2
+}
+
 # qvk_die <exit_code> <message...>
 qvk_die() {
   local code=$1

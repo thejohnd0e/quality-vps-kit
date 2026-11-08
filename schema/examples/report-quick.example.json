@@ -16,9 +16,58 @@
   "system": {
     "os": { "id": "debian", "version_id": "12", "pretty_name": "Debian GNU/Linux 12 (bookworm)" },
     "kernel": "6.1.0-27-amd64",
-    "arch": "amd64"
+    "arch": "amd64",
+    "virtualization": { "type": "kvm", "container": false, "source": "systemd-detect-virt" },
+    "cpu": { "model": "AMD EPYC 7543 32-Core Processor", "vcpus": 2, "aes": true, "clmul": true },
+    "memory": { "total_mb": 1967, "available_mb": 1612, "swap_total_mb": 0 },
+    "disk_root": { "total_mb": 19992, "available_mb": 17311 },
+    "load": { "load1": 0.08, "load5": 0.03, "load15": 0.01 },
+    "uptime_s": 3712,
+    "steal": { "pct": 0.4, "sample_s": 2 },
+    "network": {
+      "default_iface": "eth0",
+      "interface_mtu": 1500,
+      "ipv4_addresses": [{ "address": "203.0.113.10", "prefix_len": 24, "class": "public" }],
+      "ipv6_addresses": [{ "address": "2001:db8:10::5", "prefix_len": 64, "class": "global" }],
+      "ipv6_default_route": true
+    },
+    "time": { "ntp_synchronized": true },
+    "kernel_net": {
+      "tcp_congestion_control": "cubic",
+      "default_qdisc": "fq_codel",
+      "bbr": "available",
+      "rmem_max_bytes": 212992,
+      "wmem_max_bytes": 212992,
+      "ip_forward": false
+    },
+    "modules": { "wireguard": "available", "amneziawg_loaded": false },
+    "firewall": {
+      "nftables_tables": 0,
+      "iptables_backend": "nf_tables",
+      "iptables_rules": 0,
+      "ufw_active": null,
+      "firewalld_active": null
+    }
   },
   "tests": [
+    {
+      "id": "udp_buffer_size",
+      "section": "vpn_readiness",
+      "vantage": "target",
+      "endpoint": null,
+      "method": "sysctl",
+      "status": "warn",
+      "diagnosis": null,
+      "reason_code": null,
+      "reason": "UDP socket buffers are below 16777216 bytes, which limits QUIC/Hysteria throughput; recommended (not applied): sysctl -w net.core.rmem_max=16777216 net.core.wmem_max=16777216",
+      "started_at": "2026-11-08T12:00:03Z",
+      "duration_ms": 0,
+      "timeout_ms": null,
+      "samples": null,
+      "metrics": { "rmem_max_bytes": 212992, "wmem_max_bytes": 212992, "recommended_bytes": 16777216 },
+      "traffic_bytes": 0,
+      "error": null
+    },
     {
       "id": "tcp_connect_example_com",
       "section": "network_egress",
