@@ -7,17 +7,18 @@
 Read-only evaluation of a fresh VPS **before** you turn it into a VPN/proxy server. Log in as
 root, run one command, get a readable report and a machine-readable JSON.
 
-## Related Projects
+## Part of the VPS kit family
 
-These projects complement each other: `qvk` checks the server first, the kits then set up the
-VPN/proxy services on it. They are independent: `qvk` does not modify or require any of them.
+`quality-vps-kit` is one of several independent tools for the same workflow: evaluate a VPS first, then set up VPN/proxy services on it.
 
-- [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit): installer and client manager for an
-  **Xray VLESS + REALITY + Vision** server over TCP.
-- [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit): installer and client manager for an
-  **AmneziaWG** server over UDP.
-- [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit): installer and client manager for a
-  **Hysteria2** (QUIC over UDP) server.
+| Project | Purpose |
+|---|---|
+| **quality-vps-kit** (this repo) | read-only evaluation of a fresh VPS |
+| [xray-vps-kit](https://github.com/thejohnd0e/xray-vps-kit) | VLESS/Reality server installer and client management |
+| [awg-vps-kit](https://github.com/thejohnd0e/awg-vps-kit) | AmneziaWG server installer and client management |
+| [hysteria-vps-kit](https://github.com/thejohnd0e/hysteria-vps-kit) | Hysteria2 server installer and client management |
+
+The kits are independent: none of them modifies or requires the others.
 
 `qvk` answers: what is this server (CPU, memory, virtualization, MTU, NAT), is it ready
 for a VPN (AES, BBR, UDP buffers, busy ports, `/dev/net/tun`), does its own internet
