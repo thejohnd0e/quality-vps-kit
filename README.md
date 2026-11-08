@@ -1,5 +1,12 @@
 # quality-vps-kit
 
+[![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases)
+[![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE)
+![Shell: Bash](https://img.shields.io/badge/shell-bash%20%E2%89%A5%204.4-4EAA25?logo=gnubash&logoColor=white)
+![Platform](https://img.shields.io/badge/Debian%2012%2F13%20%C2%B7%20Ubuntu%2022.04%2F24.04-amd64%20%7C%20arm64-blue)
+![Read-only](https://img.shields.io/badge/changes%20nothing-read--only-success)
+
 Read-only evaluation of a fresh VPS **before** you turn it into a VPN/proxy server.
 Log in as root, run one command, get a readable report and a machine-readable JSON.
 
@@ -12,6 +19,42 @@ country consensus) and how do popular services react to it.
 
 It is deliberately **not** a monitoring platform: no daemon, no database, no panel,
 nothing is installed or changed.
+
+## Quick start
+
+On a fresh VPS, logged in as **root**:
+
+```bash
+apt-get update && apt-get install -y git curl   # skip if already present
+git clone https://github.com/thejohnd0e/quality-vps-kit.git
+cd quality-vps-kit
+./qvk doctor        # checks the platform and tools, changes nothing
+./qvk run           # takes about a minute, prints a readable report
+```
+
+To keep a machine-readable copy that is safe to share:
+
+```bash
+./qvk run --format json --output report.json --redact-ip
+```
+
+Prefer not to use `git`? Download the tarball and `SHA256SUMS` from the
+[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases) page, verify with
+`sha256sum -c SHA256SUMS`, unpack and run `./qvk` the same way.
+
+## How to read the report
+
+| Section | What it tells you |
+|---|---|
+| System | CPU, memory, disk, virtualization, MTU, IPv4/IPv6, firewall, forwarding |
+| VPN readiness | AES acceleration, `/dev/net/tun`, BBR, UDP buffers, ports already in use |
+| Network (measured from this VPS) | external IP and NAT, DNS, HTTPS timings, RTT to Russian hosts, clock offset |
+| IP reputation | ASN, prefix, country as seen by several services (agreement, not a score) |
+| Service reactions | whether popular sites answer, deny (403/429) or time out from this IP |
+| Verdicts | `target_self_check`: is the server itself sound. `client_reachability`: always `indeterminate` in v0.1 (needs a probe on the client side) |
+
+Each line is `PASS`, `WARN`, `FAIL`, `SKIPPED` or `UNKNOWN`. `WARN` is advice, not a
+defect: for example "port 443 is in use" is expected on a server that already runs a VPN.
 
 ## Honest limits (read this first)
 
@@ -137,4 +180,4 @@ step** and are not covered by CI.
 
 ## License
 
-MIT (provisional).
+[MIT](LICENSE).

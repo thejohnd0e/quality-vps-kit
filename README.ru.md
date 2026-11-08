@@ -1,5 +1,12 @@
 # quality-vps-kit
 
+[![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases)
+[![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE)
+![Shell: Bash](https://img.shields.io/badge/shell-bash%20%E2%89%A5%204.4-4EAA25?logo=gnubash&logoColor=white)
+![Platform](https://img.shields.io/badge/Debian%2012%2F13%20%C2%B7%20Ubuntu%2022.04%2F24.04-amd64%20%7C%20arm64-blue)
+![Read-only](https://img.shields.io/badge/changes%20nothing-read--only-success)
+
 Read-only оценка нового VPS **до** того, как вы сделаете из него VPN/proxy-сервер.
 Войдите под root, запустите одну команду, получите читаемый отчёт и JSON для машин.
 
@@ -12,6 +19,42 @@ Read-only оценка нового VPS **до** того, как вы сдел�
 
 Это намеренно **не** платформа мониторинга: без демона, базы данных и панели, ничего
 не устанавливается и не меняется.
+
+## Быстрый старт
+
+На свежем VPS под **root**:
+
+```bash
+apt-get update && apt-get install -y git curl   # пропустите, если уже есть
+git clone https://github.com/thejohnd0e/quality-vps-kit.git
+cd quality-vps-kit
+./qvk doctor        # проверит платформу и утилиты, ничего не меняет
+./qvk run --lang ru # около минуты, выводит читаемый отчёт
+```
+
+Чтобы сохранить JSON, которым безопасно делиться:
+
+```bash
+./qvk run --format json --output report.json --redact-ip
+```
+
+Не хотите `git`? Скачайте tarball и `SHA256SUMS` со страницы
+[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases), проверьте
+`sha256sum -c SHA256SUMS`, распакуйте и запустите `./qvk` так же.
+
+## Как читать отчёт
+
+| Раздел | Что показывает |
+|---|---|
+| Система | CPU, память, диск, виртуализация, MTU, IPv4/IPv6, firewall, forwarding |
+| Готовность к VPN | AES, `/dev/net/tun`, BBR, UDP-буферы, занятые порты |
+| Сеть (измерено с этого VPS) | внешний IP и NAT, DNS, тайминги HTTPS, RTT до российских хостов, расхождение часов |
+| Репутация IP | ASN, префикс, страна по данным нескольких сервисов (согласие, а не балл) |
+| Реакция сервисов | отвечают ли популярные сайты, отказывают (403/429) или молчат при запросе с этого IP |
+| Вердикты | `target_self_check`: исправен ли сам сервер. `client_reachability`: в v0.1 всегда `indeterminate` (нужен probe на стороне клиента) |
+
+Каждая строка: `OK`, `ВНИМАНИЕ`, `ОШИБКА`, `ПРОПУЩ.` или `НЕИЗВ.`. `ВНИМАНИЕ` — совет, а не
+поломка: например, «порт 443 занят» ожидаем на сервере, где VPN уже работает.
 
 ## Честные ограничения (прочитайте сначала)
 
@@ -107,4 +150,4 @@ Markdown-отчёты, пользовательский файл критери�
 
 ## Лицензия
 
-MIT (предварительно).
+[MIT](LICENSE).
