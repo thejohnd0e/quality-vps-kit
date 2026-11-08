@@ -25,12 +25,12 @@ nothing is installed or changed.
 On a fresh VPS, logged in as **root**:
 
 ```bash
-apt-get update && apt-get install -y git curl   # skip if already present
-git clone https://github.com/thejohnd0e/quality-vps-kit.git
-cd quality-vps-kit
-./qvk doctor        # checks the platform and tools, changes nothing
-./qvk run           # takes about a minute, prints a readable report
+curl -fsSL https://raw.githubusercontent.com/thejohnd0e/quality-vps-kit/master/install.sh | bash
 ```
+
+It downloads the pinned release, verifies its SHA-256, runs the report (about a minute)
+and deletes its temporary files. Nothing is installed and no setting is changed.
+Pass options after `-s --`, e.g. `... | bash -s -- run --lang ru` or `... | bash -s -- doctor`.
 
 To keep a machine-readable copy that is safe to share:
 
@@ -38,9 +38,9 @@ To keep a machine-readable copy that is safe to share:
 ./qvk run --format json --output report.json --redact-ip
 ```
 
-Prefer not to use `git`? Download the tarball and `SHA256SUMS` from the
-[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases) page, verify with
-`sha256sum -c SHA256SUMS`, unpack and run `./qvk` the same way.
+Prefer to read the code first? Clone the repository and run `./qvk doctor`, then
+`./qvk run`, or download the tarball and `SHA256SUMS` from the
+[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases) page.
 
 ## How to read the report
 
@@ -91,7 +91,7 @@ cd quality-vps-kit-*/
 
 Or from a checkout: `git clone <repo-url> && cd quality-vps-kit && ./qvk run`.
 
-Do not pipe a network script into a shell. Build a tarball with `scripts/release.sh`.
+The one-liner pipes `install.sh` into `bash`; read it first if you prefer (it is short). Build a tarball with `scripts/release.sh`.
 
 ## Usage
 

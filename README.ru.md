@@ -25,12 +25,12 @@ Read-only оценка нового VPS **до** того, как вы сдел�
 На свежем VPS под **root**:
 
 ```bash
-apt-get update && apt-get install -y git curl   # пропустите, если уже есть
-git clone https://github.com/thejohnd0e/quality-vps-kit.git
-cd quality-vps-kit
-./qvk doctor        # проверит платформу и утилиты, ничего не меняет
-./qvk run --lang ru # около минуты, выводит читаемый отчёт
+curl -fsSL https://raw.githubusercontent.com/thejohnd0e/quality-vps-kit/master/install.sh | bash
 ```
+
+Скрипт скачивает зафиксированный релиз, проверяет SHA-256, запускает отчёт (около минуты)
+и удаляет временные файлы. Ничего не устанавливается и настройки не меняются.
+Опции передаются после `-s --`, например `... | bash -s -- run --lang ru` или `... | bash -s -- doctor`.
 
 Чтобы сохранить JSON, которым безопасно делиться:
 
@@ -38,9 +38,9 @@ cd quality-vps-kit
 ./qvk run --format json --output report.json --redact-ip
 ```
 
-Не хотите `git`? Скачайте tarball и `SHA256SUMS` со страницы
-[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases), проверьте
-`sha256sum -c SHA256SUMS`, распакуйте и запустите `./qvk` так же.
+Хотите сначала прочитать код? Склонируйте репозиторий и запустите `./qvk doctor`, затем
+`./qvk run`, либо скачайте tarball и `SHA256SUMS` со страницы
+[Releases](https://github.com/thejohnd0e/quality-vps-kit/releases).
 
 ## Как читать отчёт
 
@@ -90,7 +90,7 @@ cd quality-vps-kit-*/
 
 Или из checkout: `git clone <url-репозитория> && cd quality-vps-kit && ./qvk run`.
 
-Не запускайте сетевой скрипт через конвейер в shell. Собрать tarball:
+Однострочник передаёт `install.sh` в `bash`; при желании прочитайте его заранее (он короткий). Собрать tarball:
 `scripts/release.sh`.
 
 ## Использование

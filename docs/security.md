@@ -66,10 +66,14 @@ without shell metacharacters) before use; nothing user-provided is ever evaluate
 shell. `/etc/os-release` is parsed as data, never sourced. Values from remote services
 are untrusted data: they are length-limited, pattern-checked and JSON-escaped.
 
-## Installing without trusting a pipe
+## The one-line installer
 
-Do not pipe a network script into a shell. Use a git checkout or the release tarball
-and verify its checksum (`sha256sum -c`), see the README.
+`install.sh` is a short bootstrap meant for `curl ... | bash`. It downloads the pinned
+release tarball and `SHA256SUMS` over HTTPS from GitHub, verifies the checksum, runs `qvk`
+from a temporary directory and deletes it. The checksum is served from the same origin as
+the tarball, so it detects corruption, not a compromised repository: if you need more
+assurance, read `install.sh`, or use a git checkout (inspect the code, then run it) or the
+release tarball.
 
 ## Reporting vulnerabilities
 
