@@ -30,6 +30,7 @@ assert_eq "a b" "$(_qvk_printf_fmt '%s %s' a b c d)" "two conversions, four argu
 assert_eq "x" "$(_qvk_printf_fmt 'x' a b)" "no conversions, surplus arguments ignored"
 assert_eq "low trust score" "$(msg claude_risk.reason.low_trust_score)" "claude risk reason text"
 assert_eq "Claude risk" "$(msg report.claude_risk)" "claude risk label"
+assert_eq "Claude trust score 79" "$(msg claude_risk.trust 79)" "claude trust score wording"
 
 qvk_set_lang ru
 assert_eq "да" "$(msg yes)" "Russian lookup"

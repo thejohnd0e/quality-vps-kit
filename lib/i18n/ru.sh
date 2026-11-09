@@ -238,7 +238,7 @@ Read-only оценка нового VPS перед использованием 
   [claude_risk.reason.no_data]='нет данных'
   [claude_risk.reason.source_unavailable]='сервис оценки не ответил'
   [claude_risk.reason.risk_flags_unknown]='не все признаки риска получены'
-  [claude_risk.trust]='рейтинг доверия net.coffee: %s'
+  [claude_risk.trust]='рейтинг доверия для Claude: %s'
   [http.ok]='%s: HTTP %s, %s мс'
   [http.denied]='%s: HTTP 403, решение сервиса, а не сетевая фильтрация'
   [http.rate]='%s: HTTP 429 (лимит запросов)'

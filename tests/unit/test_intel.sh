@@ -140,6 +140,10 @@ assert_eq 'null' "$(sf ripestat trust_score)" "other sources keep null"
 assert_not_contains "$(cat "$R")" "203-0-113-10.example.net" "rdns is never copied"
 assert_contains "$human" "Claude risk" "human risk line"
 assert_contains "$human" "low trust score" "risk reason rendered"
+risk_para=$(printf '%s\n' "$human" | grep -A1 '^Claude risk$')
+assert_eq "  high — low trust score, hosting (datacenter) IP (Claude trust score 41)" \
+  "$(printf '%s\n' "$risk_para" | sed -n '2p')" "risk is its own paragraph with the Claude trust score"
+assert_not_contains "$risk_para" "net.coffee trust score" "risk line does not repeat the source label"
 
 echo "# HTTP reachability classification"
 fix "" https://vk.com/robots.txt 0 403 'forbidden'

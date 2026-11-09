@@ -133,10 +133,12 @@ its IP is a hosting IP. That is the honest answer, not a defect.
 
 ### 4. Human output
 
-One line under the IP-intelligence section, next to the geo line:
+Its own paragraph after the IP-intelligence section (the score's source is
+already listed in the `net.coffee` row):
 
 ```
-  Claude risk        medium — hosting (datacenter) IP, low trust score (net.coffee trust score 41)
+Claude risk
+  medium — hosting (datacenter) IP, low trust score (Claude trust score 41)
 ```
 
 The line is always printed, including `unknown — no data` and

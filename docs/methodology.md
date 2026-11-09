@@ -160,7 +160,9 @@ Reading the result:
 - A plain VPS is `medium` at best, because its address is a hosting address. That is
   the honest answer, not a defect.
 - `trust_score` is one provider's figure; the level is our rule applied to it, not a
-  probability that Claude will act.
+  probability that Claude will act. The human report labels it "Claude trust score"
+  because it is the score behind the Claude risk line; the JSON keeps it under the
+  `netcoffee` source as `trust_score`.
 - The region factor does not depend on the third-party service: with IPinfo or the
   geo consensus reporting a restricted country, the level is `high` even when
   net.coffee is unreachable.

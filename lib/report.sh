@@ -302,7 +302,7 @@ _qvk_human_claude_risk() {
     medium | unknown) text=$(qvk_paint yellow "$text") ;;
     *) text=$(qvk_paint green "$text") ;;
   esac
-  _qvk_human_field report.claude_risk "$text"
+  printf '\n%s\n  %s\n' "$(qvk_paint bold "$(msg report.claude_risk)")" "$text"
 }
 
 _qvk_test_label() {
