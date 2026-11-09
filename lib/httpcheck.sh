@@ -47,12 +47,11 @@ _http_classify() {
 }
 
 qvk_http_run() {
-  local cat name url host id loc region details metrics hmsg hargs total_ms
+  local cat name url id loc region details metrics hmsg hargs total_ms
   for cat in "${QVK_HTTP_CATEGORIES[@]}"; do
     while read -r name url; do
       [[ -n $name ]] || continue
       id="http_${cat}_$name"
-      host=$(qvk_url_host "$url")
       if ((QVK_OFFLINE)); then
         qvk_add_test id="$id" section=http_reachability method=curl_get endpoint="$url" \
           status=skipped reason_code=offline_mode reason="--offline: no external requests" hmsg=net.offline

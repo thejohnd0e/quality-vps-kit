@@ -7,6 +7,7 @@
 # error (strings/numbers, empty = null); metrics details (JSON fragments);
 # hmsg (i18n key) and hargs (args separated by the unit separator $'\x1f').
 
+# shellcheck disable=SC2034  # arrays and constants are read by other modules
 QVK_TESTS=()
 QVK_TEST_HUMAN=()   # "section<US>id<US>status<US>hmsg<US>hargs..."
 declare -A QVK_TEST_GROUP=()    # id -> group (for http_reachability sub-headings)
