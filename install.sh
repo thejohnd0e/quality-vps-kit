@@ -5,7 +5,7 @@
 #   ... | bash -s -- run --lang ru        (arguments are passed to qvk; default: run)
 set -euo pipefail
 
-version=${QVK_VERSION:-0.1.2}
+version=${QVK_VERSION:-0.1.3}
 base="https://github.com/thejohnd0e/quality-vps-kit/releases/download/v${version}"
 name="quality-vps-kit-${version}"
 

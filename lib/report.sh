@@ -338,7 +338,8 @@ _qvk_human_tests() {
     grp=${QVK_TEST_GROUP[$id]:-}
     # Logical sub-groups for HTTP reachability: one bold line per category.
     if [[ $section == http_reachability && -n $grp && $grp != "$prev_group" ]]; then
-      printf '  %s\n' "$(qvk_paint bold "$(msg "report.group.$grp")")"
+      [[ -n $prev_group ]] && printf '\n'
+      printf '  %s\n' "$(qvk_paint bold "[$(msg "report.group.$grp")]")"
       prev_group=$grp
     fi
     args=()

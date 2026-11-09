@@ -4,6 +4,13 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-09
+
+### Added
+
+- Add popular censored & infrastructure endpoints (Discord, X, Instagram, Facebook, Telegram API, LinkedIn, GitHub, Google Play, DigitalOcean, Amnezia VPN, Outline VPN, Rutracker, Flibusta, Mailfence, Rezka, Google Video CDN).
+- Render HTTP reachability section as a clean, categorized table with human-friendly service names and latency.
+
 ## [0.1.2] - 2026-11-09
 
 ### Added
