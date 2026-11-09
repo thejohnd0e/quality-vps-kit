@@ -60,6 +60,8 @@ if [[ -f $WORKFLOW ]]; then
   assert_contains "$(cat "$WORKFLOW")" 'v*' "workflow matches version tags"
   assert_contains "$(cat "$WORKFLOW")" 'contents: write' "workflow can publish release assets"
   assert_contains "$(cat "$WORKFLOW")" 'gh release view' "workflow verifies the published release"
+  verify_step=$(sed -n '/name: Verify published release/,$p' "$WORKFLOW")
+  assert_contains "$verify_step" 'GH_TOKEN:' "release verification has GitHub API auth"
 fi
 
 finish_tests

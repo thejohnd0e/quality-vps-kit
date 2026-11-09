@@ -37,3 +37,5 @@ jobs:
 
       - name: Verify published release
         run: gh release view "$GITHUB_REF_NAME" --json assets
+        env:
+          GH_TOKEN: ${{ github.token }}
