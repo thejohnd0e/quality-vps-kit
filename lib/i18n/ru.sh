@@ -292,7 +292,7 @@ Read-only оценка нового VPS перед использованием 
   [http.ok]='HTTP %s, %s мс'
   [http.denied]='HTTP 403 — решение сервиса, а не сетевая фильтрация'
   [http.rate]='HTTP 429 — лимит запросов'
-  [http.fail]='%s: %s'
+  [http.fail]='%s'
   [progress.pmtu]='замер path MTU...'
   [progress.dns]='сравнение DNS-резолверов...'
   [test.path_mtu]='Path MTU'
