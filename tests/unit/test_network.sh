@@ -45,9 +45,11 @@ curl_calls_outside_config() {
   grep '^curl ' "$QVK_STUB_LOG" | while IFS= read -r line; do
     [[ $line == 'curl --version' ]] && continue
     url=${line##* }
-    # IP-intelligence services are fixed in the code, not in the endpoint list.
+    # IP-intelligence services and the service_geo probes are fixed in the code,
+    # not in the endpoint list.
     case $url in
       https://stat.ripe.net/* | https://ipinfo.io/* | https://api.abuseipdb.com/* | https://ip.net.coffee/*) continue ;;
+      'https://www.youtube.com/premium?hl=en') continue ;;
     esac
     grep -qF -- " $url" "$CONFIG" || printf '%s\n' "$line"
   done
@@ -81,7 +83,7 @@ assert_true "clock offset near zero" num_between "$(tf clock_offset metrics.offs
 assert_eq '"suitable"' "$(jf summary.verdicts.target_self_check.verdict)" "verdict suitable"
 assert_eq '[]' "$(jf summary.verdicts.target_self_check.missing_evidence)" "nothing missing"
 assert_eq '"indeterminate"' "$(jf summary.verdicts.client_reachability.verdict)" "client reachability still indeterminate"
-assert_eq "" "$(curl_calls_outside_config)" "only configured endpoints and the four IP-intelligence hosts were contacted"
+assert_eq "" "$(curl_calls_outside_config)" "only configured endpoints, the IP-intelligence hosts and the service_geo probes were contacted"
 assert_eq "" "$(stub_calls_not_allowed | grep -v '^curl ')" "other commands stay read-only"
 human=$("$REPO_ROOT/qvk" run 2>/dev/null)
 assert_contains "$human" "Network (measured from this VPS)" "human network section"

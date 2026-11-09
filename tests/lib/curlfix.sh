@@ -1,9 +1,9 @@
 # shellcheck shell=bash
 # Canned curl responses for network tests. Needs WORK, CF, REPO_ROOT, hostfix.sh.
 
-# fix <family|""> <url> <curl exit> <http code> <body> [time_connect seconds]
+# fix <family|""> <url> <curl exit> <http code> <body> [time_connect seconds] [extra headers]
 fix() {
-  local fam=$1 url=$2 rc=$3 code=$4 body=$5 conn=${6:-0.025000} key
+  local fam=$1 url=$2 rc=$3 code=$4 body=$5 conn=${6:-0.025000} extra=${7:-} key
   key=$(printf '%s %s' "$fam" "$url" | tr -c 'A-Za-z0-9._-' '_')
   case $rc in
     0) printf '%s 0.004000 %s 0.060000 0.090000 0.091000 %d 300 80 192.0.2.80\n' \
@@ -12,7 +12,11 @@ fix() {
     7 | 28) printf '000 0.004000 0.000000 0.000000 0.000000 3.000000 0 0 0 \n' >"$CF/$key.w" ;;
     *) printf '000 0.004000 0.000000 0.000000 0.000000 0.001000 0 0 0 \n' >"$CF/$key.w" ;;
   esac
-  printf 'HTTP/2 %s\r\ndate: @DATE@\r\ncontent-type: text/plain\r\n\r\n' "$code" >"$CF/$key.h"
+  {
+    printf 'HTTP/2 %s\r\ndate: @DATE@\r\ncontent-type: text/plain\r\n' "$code"
+    [[ -n $extra ]] && printf '%s\r\n' "$extra"
+    printf '\r\n'
+  } >"$CF/$key.h"
   printf '%s' "$body" >"$CF/$key.b"
   [[ $rc == 0 ]] || printf 'curl: (%s) stub failure\n' "$rc" >"$CF/$key.e"
   echo "$rc" >"$CF/$key.exit"

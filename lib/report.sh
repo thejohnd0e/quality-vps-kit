@@ -359,6 +359,7 @@ _qvk_report_human_raw() {
   _qvk_human_geo
   _qvk_human_claude_risk
   _qvk_human_tests http_reachability report.section.http
+  _qvk_human_tests service_geo report.section.service_geo
   printf '\n%s\n' "$(qvk_paint bold "$(msg report.verdicts)")"
   _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" QVK_SELF_REASONS QVK_SELF_MISSING
   _qvk_human_verdict client_reachability "$QVK_CLIENT_VERDICT" QVK_CLIENT_REASONS QVK_CLIENT_MISSING
