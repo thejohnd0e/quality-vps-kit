@@ -44,6 +44,10 @@ run_human() {
   : >"$QVK_STUB_LOG"
   "$REPO_ROOT/qvk" run >"$H" 2>"$WORK/err"
 }
+run_human_offline() {
+  : >"$QVK_STUB_LOG"
+  "$REPO_ROOT/qvk" run --offline >"$H" 2>"$WORK/err"
+}
 jf() {
   "$PY" -I -c 'import json,sys
 d=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -108,6 +112,15 @@ assert_eq '"unknown"' "$(tf sg_youtube_premium status)" "no marker -> unknown, n
 assert_eq '"unknown"' "$(tf sg_youtube_premium details.restriction)" "restriction unknown"
 assert_eq '"insufficient_data"' "$(tf sg_youtube_premium reason_code)" "reason recorded"
 
+echo "# markers that are not specific to the product"
+sg_fixtures 0 200 '<html>Featured video not available in your country</html>'
+run_json
+assert_eq '"unknown"' "$(tf sg_youtube_premium status)" "a generic 'not available' line is not a Premium restriction"
+
+sg_fixtures 0 200 '<html><script src="/ypc.js"></script></html>'
+run_json
+assert_eq '"unknown"' "$(tf sg_youtube_premium status)" "a bare ypc token is not Premium availability"
+
 echo "# redirect is not a country restriction"
 sg_fixtures 0 302 '' 'location: /consent'
 run_json
@@ -143,6 +156,22 @@ run_json --offline
 assert_eq '"skipped"' "$(tf sg_youtube_premium status)" "offline -> skipped"
 assert_eq '"offline_mode"' "$(tf sg_youtube_premium reason_code)" "offline reason"
 assert_eq '0' "$(count_calls youtube.com)" "no request to YouTube offline"
+run_human_offline
+assert_contains "$(cat "$H")" "offline mode" "offline rows explain themselves"
+assert_not_contains "$(cat "$H")" "sg_offline" "no raw i18n keys in the report"
+
+echo "# body over the size cap is not a decision"
+big="${YT_AVAILABLE}$(head -c 1100000 /dev/zero | tr '\0' a)"
+sg_fixtures 0 200 "$big"
+run_json
+assert_eq '"unknown"' "$(tf sg_youtube_premium status)" "oversized body -> unknown even when curl exits 0"
+assert_eq '"insufficient_data"' "$(tf sg_youtube_premium reason_code)" "oversized body reason"
+
+echo "# failures explain themselves in the human report"
+sg_fixtures 28 200 ''
+run_human
+assert_contains "$(cat "$H")" "no answer from the service" "human timeout message"
+assert_not_contains "$(cat "$H")" "sg_unreachable" "no raw i18n keys for failures"
 
 echo "# prime video: the redirect target is the signal"
 pv_fixtures 302 /servicerestricted
@@ -161,6 +190,11 @@ pv_fixtures 302 'https://consent.example/start'
 run_json
 assert_eq '"unknown"' "$(tf sg_prime_video status)" "redirect to a foreign host -> unknown"
 assert_eq '"unknown"' "$(tf sg_prime_video details.restriction)" "not a country restriction"
+
+pv_fixtures 302 '/consent'
+run_json
+assert_eq '"unknown"' "$(tf sg_prime_video status)" "unverified relative redirect -> unknown, not available"
+assert_eq '"unknown"' "$(tf sg_prime_video details.restriction)" "relative redirect is not a country fact"
 
 pv_fixtures 200 ''
 run_json
@@ -189,6 +223,14 @@ sp_fixtures '{"status":1}'
 run_json
 assert_eq '"unknown"' "$(tf sg_spotify_signup status)" "flag missing -> unknown"
 assert_eq '"insufficient_data"' "$(tf sg_spotify_signup reason_code)" "flag missing reason"
+
+sp_fixtures '{"country":"US","is_country_launched":trueish}'
+run_json
+assert_eq '"unknown"' "$(tf sg_spotify_signup status)" "malformed boolean is not a decision"
+
+sp_fixtures '{"country":"US","is_country_launched":falseish}'
+run_json
+assert_eq '"unknown"' "$(tf sg_spotify_signup status)" "malformed false is not a restriction"
 
 sp_fixtures '{"country":"US","is_country_launched":true}'
 run_json

@@ -89,8 +89,9 @@ Tool versioning and the release procedure are documented in [docs/release.md](re
 
 - `schema_version` is `0.x` until 1.0; a minor bump may break compatibility.
   From 1.0: semver (breaking change = major). Adding a value to `$defs/section`
-  (an informational section such as `service_geo`) is additive and needs no bump:
-  old reports stay valid and new rows are ordinary `tests[]` records.
+  (an informational section such as `service_geo`) does not change the meaning of
+  any existing field, so `schema_version` stays `0.1`; an outside consumer that
+  pinned a copy of the schema must accept the new `section` value.
 - Unknown values are `null`. Units are key suffixes: `_ms`, `_s`, `_mbps`, `_bytes`,
   `_pct`, `_mb`. `metrics` holds numbers/null only; non-numeric facts go to `details`.
 - `status`, `diagnosis`, `reason_code` and `http_outcome` are separate fields with

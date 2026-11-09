@@ -190,15 +190,19 @@ a tool User-Agent), no redirects followed, no captcha and no anti-bot signals he
 
 | Service | `country_restricted` when | `none` (available) when |
 |---|---|---|
-| YouTube Premium | the page says "not available in your country" | a premium product marker (`ypc`) is present |
-| Prime Video | the answer redirects to `/servicerestricted` | the answer redirects to the service's own offers path |
-| Spotify signup | `is_country_launched` is `false` | `is_country_launched` is `true` |
+| YouTube Premium | the page says the product is "not available in your country" | the product name and a premium product token (`ypc`) both appear |
+| Prime Video | the answer redirects to `/servicerestricted` | the answer redirects to the service's own `/offers/` path |
+| Spotify signup | `is_country_launched` is exactly `false` | `is_country_launched` is exactly `true` |
 
 Rules:
 
 - **Fail closed.** `none` requires positive evidence. When the answer carries no
   decisive marker the row is `unknown` with `insufficient_data` — never "available".
-  A wording change therefore degrades the row; it cannot invent a restriction.
+  A wording change therefore degrades the row; it cannot invent a restriction. A
+  malformed value (for example `trueish` instead of `true`) is not a decision, and a
+  redirect to an unverified path is `unknown`, not availability.
+- A body that reaches the 1 MB download cap counts as truncated, whichever way
+  `curl` reports it, and yields `unknown`.
 - `country_restricted` is a policy of the service for the country of this address.
   It is not network filtering, not a verdict, and not proof that a VPN will or will not
   work for a particular account.

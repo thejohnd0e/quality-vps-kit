@@ -15,9 +15,19 @@ QVK_SG_SERVICES=(youtube_premium prime_video spotify_signup)
 
 # _sg_country <file> [json key] -> two-letter code, upper-cased; empty when absent
 _sg_country() {
-  local key=${2:-countryCode}
-  grep -m1 -oE "\"$key\"[[:space:]]*:[[:space:]]*\"[A-Za-z]{2}\"" "$1" 2>/dev/null |
-    sed -E 's/^.*:[[:space:]]*"//; s/"$//' | tr '[:lower:]' '[:upper:]'
+  local key=${2:-countryCode} code
+  code=$(grep -oE "\"$key\"[[:space:]]*:[[:space:]]*\"[A-Za-z]{2}\"" "$1" 2>/dev/null |
+    head -n1 | sed -E 's/^.*:[[:space:]]*"//; s/"$//' | tr '[:lower:]' '[:upper:]')
+  [[ $code =~ ^[A-Z]{2}$ ]] || code=""
+  printf '%s' "$code"
+}
+
+# _sg_too_big: the body reached the configured cap. curl does not always return
+# exit 63 for streamed bodies, so the size is checked here as well.
+_sg_too_big() {
+  local n
+  n=$(wc -c <"$QC_BODY" 2>/dev/null) || n=0
+  ((n >= QVK_MAX_BODY_BYTES))
 }
 
 # _sg_has <file> <extended regex> -> 0 when the (case-insensitive) pattern matches
@@ -42,7 +52,12 @@ _sg_failure() {
   local id=$1 endpoint=$2 st rcode outcome
   read -r st rcode <<<"$(qvk_curl_outcome "$QC_RC")"
   if [[ $st != pass ]]; then
-    _sg_emit "$id" "$st" unknown "" none "$rcode" sg_unreachable "$rcode" "$endpoint" unknown
+    case $rcode in
+      tls_failure) outcome=tls_error ;;
+      curl_error) outcome=unknown ;;
+      *) outcome=network_error ;;
+    esac
+    _sg_emit "$id" "$st" unknown "" none "$rcode" sg.unreachable "$rcode" "$endpoint" "$outcome"
     return 0
   fi
   case $QC_CODE in
@@ -50,21 +65,23 @@ _sg_failure() {
     429) rcode=http_429 outcome=rate_limited ;;
     *) rcode=http_error outcome=unknown ;;
   esac
-  _sg_emit "$id" unknown unknown "" none "$rcode" sg_failed "${QC_CODE:-none}" "$endpoint" "$outcome"
+  _sg_emit "$id" unknown unknown "" none "$rcode" sg.failed "${QC_CODE:-none}" "$endpoint" "$outcome"
 }
 
-# _sg_html <id> <url> <restriction regex> <product regex> [json key for the country]
+# _sg_html <id> <url> <restriction regex> <product regex> [country json key] [guard regex]
+# The guard, when given, must match as well: a broad product token alone is not
+# proof that the product is offered.
 _sg_html() {
-  local id=$1 url=$2 restr=$3 product=$4 ckey=${5:-countryCode}
+  local id=$1 url=$2 restr=$3 product=$4 ckey=${5:-countryCode} guard=${6:-}
   local st country status restriction evidence hmsg hargs
   if ((QVK_OFFLINE)); then
     QC_TOTAL=0 QC_BYTES=0
-    _sg_emit "$id" skipped unknown "" none offline_mode sg_offline "" "$url"
+    _sg_emit "$id" skipped unknown "" none offline_mode sg.offline "" "$url"
     return 0
   fi
   qvk_curl "sg_$id" "$url" -A "$QVK_SG_UA"
-  if ((QC_RC == 63)); then
-    _sg_emit "$id" unknown unknown "" none insufficient_data sg_truncated "" "$url"
+  if ((QC_RC == 63)) || _sg_too_big; then
+    _sg_emit "$id" unknown unknown "" none insufficient_data sg.truncated "" "$url"
     return 0
   fi
   read -r st _ <<<"$(qvk_curl_outcome "$QC_RC")"
@@ -76,7 +93,7 @@ _sg_html() {
   if _sg_has "$QC_BODY" "$restr"; then
     status=warn restriction=country_restricted evidence=restriction_marker
     if [[ -n $country ]]; then hmsg=sg.restricted hargs="$country"; else hmsg=sg.restricted_nc hargs=""; fi
-  elif _sg_has "$QC_BODY" "$product"; then
+  elif _sg_has "$QC_BODY" "$product" && { [[ -z $guard ]] || _sg_has "$QC_BODY" "$guard"; }; then
     status=pass restriction=none evidence=product_page
     if [[ -n $country ]]; then hmsg=sg.available hargs="$country"; else hmsg=sg.available_nc hargs=""; fi
   else
@@ -92,7 +109,7 @@ _sg_html() {
 # markers otherwise; the captured page carries no country code.
 _sg_youtube_premium() {
   _sg_html youtube_premium 'https://www.youtube.com/premium?hl=en' \
-    'not available in your country' 'ypc'
+    'youtube premium (is )?not available in your country' 'youtube premium' '' 'ypc'
 }
 
 # Prime Video answers with a redirect and an empty body: `/servicerestricted`
@@ -102,12 +119,12 @@ _sg_prime_video() {
   local url='https://www.primevideo.com/' st loc
   if ((QVK_OFFLINE)); then
     QC_TOTAL=0 QC_BYTES=0
-    _sg_emit prime_video skipped unknown "" none offline_mode sg_offline "" "$url"
+    _sg_emit prime_video skipped unknown "" none offline_mode sg.offline "" "$url"
     return 0
   fi
   qvk_curl sg_prime_video "$url" -A "$QVK_SG_UA"
-  if ((QC_RC == 63)); then
-    _sg_emit prime_video unknown unknown "" none insufficient_data sg_truncated "" "$url"
+  if ((QC_RC == 63)) || _sg_too_big; then
+    _sg_emit prime_video unknown unknown "" none insufficient_data sg.truncated "" "$url"
     return 0
   fi
   read -r st _ <<<"$(qvk_curl_outcome "$QC_RC")"
@@ -117,21 +134,21 @@ _sg_prime_video() {
   fi
   case $QC_CODE in
     3??)
-      loc=$(grep -i -m1 '^location:' "$QC_HDR" 2>/dev/null | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+      loc=$(grep -i -m1 '^location:' "$QC_HDR" 2>/dev/null | sed -E 's/^[^:]+:[[:space:]]*//; s/\r$//')
       case $loc in
-        *servicerestricted*)
+        /servicerestricted | /servicerestricted\?* | /servicerestricted/*)
           _sg_emit prime_video warn country_restricted "" restriction_marker "" sg.restricted_nc "" "$url"
           ;;
-        /*)
+        /offers/*)
           _sg_emit prime_video pass none "" redirect "" sg.available_nc "" "$url"
           ;;
         *)
-          _sg_emit prime_video unknown unknown "" none http_error sg_failed "$QC_CODE" "$url" unknown
+          _sg_emit prime_video unknown unknown "" none http_error sg.failed "$QC_CODE" "$url" unknown
           ;;
       esac
       ;;
     2??)
-      _sg_emit prime_video unknown unknown "" none insufficient_data sg_unknown "" "$url"
+      _sg_emit prime_video unknown unknown "" none insufficient_data sg.unknown "" "$url"
       ;;
     *)
       _sg_failure prime_video "$url"
@@ -146,12 +163,12 @@ _sg_spotify_signup() {
   local full="$url?validate=1&key=$QVK_SG_SPOTIFY_KEY"
   if ((QVK_OFFLINE)); then
     QC_TOTAL=0 QC_BYTES=0
-    _sg_emit spotify_signup skipped unknown "" none offline_mode sg_offline "" "$url"
+    _sg_emit spotify_signup skipped unknown "" none offline_mode sg.offline "" "$url"
     return 0
   fi
   qvk_curl sg_spotify_signup "$full" -A "$QVK_SG_UA"
-  if ((QC_RC == 63)); then
-    _sg_emit spotify_signup unknown unknown "" none insufficient_data sg_truncated "" "$url"
+  if ((QC_RC == 63)) || _sg_too_big; then
+    _sg_emit spotify_signup unknown unknown "" none insufficient_data sg.truncated "" "$url"
     return 0
   fi
   read -r st _ <<<"$(qvk_curl_outcome "$QC_RC")"
@@ -160,14 +177,14 @@ _sg_spotify_signup() {
     return 0
   fi
   country=$(_sg_country "$QC_BODY" country)
-  if _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*false'; then
+  if _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*false[[:space:]]*[,}]'; then
     _sg_emit spotify_signup warn country_restricted "$country" availability_flag "" \
       "$([[ -n $country ]] && echo sg.restricted || echo sg.restricted_nc)" "$country" "$url"
-  elif _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*true'; then
+  elif _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*true[[:space:]]*[,}]'; then
     _sg_emit spotify_signup pass none "$country" availability_flag "" \
       "$([[ -n $country ]] && echo sg.available || echo sg.available_nc)" "$country" "$url"
   else
-    _sg_emit spotify_signup unknown unknown "$country" none insufficient_data sg_unknown "" "$url"
+    _sg_emit spotify_signup unknown unknown "$country" none insufficient_data sg.unknown "" "$url"
   fi
 }
 
