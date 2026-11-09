@@ -28,14 +28,17 @@ _release_error() { echo "release.sh: $*" >&2; exit 2; }
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || _release_error "not inside a git work tree"
 [[ -z $(git status --porcelain --untracked-files=no) ]] || _release_error "the working tree has uncommitted changes; commit first"
 git ls-files --error-unmatch VERSION >/dev/null 2>&1 || _release_error "VERSION is not tracked"
-version=$(tr -d '[:space:]' <VERSION)
-[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || _release_error "VERSION must be x.y.z"
+version=$(<VERSION)
+[[ $version =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || _release_error "VERSION must be a valid x.y.z SemVer value"
 tag="v$version"
 git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 || _release_error "git tag $tag is missing"
 tag_commit=$(git rev-parse "$tag^{commit}")
 head_commit=$(git rev-parse HEAD)
 [[ $tag_commit == "$head_commit" ]] || _release_error "tag $tag does not point to HEAD"
-grep -qF -- "QVK_VERSION:-$version" install.sh || _release_error "install.sh default does not match VERSION $version"
+pin_line="version=\${QVK_VERSION:-$version}"
+pin_count=$(grep -Fxc -- "$pin_line" install.sh || true)
+assignment_count=$(grep -c '^version=' install.sh || true)
+[[ $pin_count == 1 && $assignment_count == 1 ]] || _release_error "install.sh default does not match VERSION $version"
 
 echo "release.sh: checks passed: $tag"
 ((check_only)) && exit 0

@@ -24,6 +24,14 @@ jobs:
       - name: Verify release metadata
         run: bash scripts/release.sh --check
 
+      - name: Verify triggering tag matches VERSION
+        run: |
+          expected_tag="v$(cat VERSION)"
+          if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+            echo "workflow: triggering tag $GITHUB_REF_NAME does not match VERSION ($expected_tag)" >&2
+            exit 1
+          fi
+
       - name: Build release assets
         run: bash scripts/release.sh dist
 
@@ -36,6 +44,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Verify published release
-        run: gh release view "$GITHUB_REF_NAME" --json assets
+        run: |
+          set -euo pipefail
+          assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
+          printf '%s\n' "$assets" | grep -Fxq -- "quality-vps-kit-${GITHUB_REF_NAME#v}.tar.gz"
+          printf '%s\n' "$assets" | grep -Fxq -- "SHA256SUMS"
         env:
           GH_TOKEN: ${{ github.token }}

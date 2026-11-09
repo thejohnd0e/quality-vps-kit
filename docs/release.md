@@ -23,10 +23,17 @@ builds `quality-vps-kit-<version>.tar.gz` and `SHA256SUMS`.
 4. Commit the release metadata, for example `git commit -m "release: vX.Y.Z"`.
 5. Create an annotated tag on that commit:
    `git tag -a vX.Y.Z -m "quality-vps-kit X.Y.Z"`.
-6. Push the branch and tag: `git push origin master --follow-tags`.
+6. Push **only the tag** first: `git push origin vX.Y.Z`. The tag workflow runs
+   from that commit while the `master` installer still points to the previous
+   release, whose assets remain available.
+7. Wait for the workflow to pass and confirm both assets are present (see
+   [Verifying](#verifying)); only then push the branch: `git push origin master`.
 
-The tag workflow runs the offline tests and release check, builds the two assets,
-and publishes the GitHub Release. It does not publish if a check fails.
+The tag workflow runs the offline tests and release check, verifies the triggering
+tag matches `VERSION`, builds the two assets, publishes the GitHub Release, then
+checks that both the archive and `SHA256SUMS` exist. It does not publish if a check
+fails. Keeping the master push until afterward prevents `install.sh` from pointing
+to assets that have not been published yet.
 
 ## Verifying
 
