@@ -71,7 +71,7 @@ count_calls() { grep -cF -- "$1" "$QVK_STUB_LOG" 2>/dev/null || true; }
 sg_fixtures() {
   scenario 0 0 0
   services_fixtures
-  intel_fixtures
+  intel_fixtures_default
   fix "" "$YT_URL" "${1:-0}" "${2:-200}" "${3:-$YT_AVAILABLE}" 0.025000 "${4:-}"
   fix "" "$PV_URL" 0 302 '' 0.025000 'location: /offers/nonprimehomepage'
   fix "" "$SP_URL" 0 200 '{"country":"US","is_country_launched":true}'

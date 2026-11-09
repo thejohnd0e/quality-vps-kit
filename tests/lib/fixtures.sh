@@ -29,6 +29,9 @@ intel_fixtures() {
   fix "" "$NC_URL" "${7:-0}" "${8:-200}" "${9:-$NC_OK}"
 }
 
+# The all-default case, without making a bare call to a function that takes arguments.
+intel_fixtures_default() { intel_fixtures 0 200 "$RIPE_OK" 0 200 "$INFO_OK" 0 200 "$NC_OK"; }
+
 # services_fixtures: gentle HTTP checks of the default endpoint list
 services_fixtures() {
   fix "" https://api.openai.com/v1/models 0 401 '{"error":"auth"}'

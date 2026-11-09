@@ -62,7 +62,7 @@ count_calls() { grep -cF -- "$1" "$QVK_STUB_LOG"; }
 echo "# default: RIPEstat + IPinfo answer, AbuseIPDB has no key"
 host debian12-kvm-amd64
 scenario 0 0 0
-intel_fixtures
+intel_fixtures_default
 services_fixtures
 run_json
 assert_eq 0 "$?" "run exits 0"
@@ -139,7 +139,7 @@ assert_contains "$human" "риск для Claude" "russian risk label"
 
 echo "# geo conflict between services"
 scenario 0 0 0
-intel_fixtures
+intel_fixtures_default
 services_fixtures
 fix "" https://chatgpt.com/cdn-cgi/trace 0 200 $'ip=203.0.113.10\nloc=US\n'
 run_json
@@ -152,7 +152,7 @@ assert_contains "$human" "sources disagree:" "human geo conflict"
 
 echo "# keys: used when set, never leaked"
 scenario 0 0 0
-intel_fixtures
+intel_fixtures_default
 services_fixtures
 ABUSEIPDB_API_KEY=SECRET-ABUSE-KEY-123 IPINFO_TOKEN=SECRET-INFO-TOKEN-456 run_json
 assert_true "schema" validate
@@ -303,7 +303,7 @@ assert_eq '["restricted_region"]' "$(jf ip_intelligence.claude_risk.reasons | tr
 
 echo "# --redact-ip"
 scenario 0 0 0
-intel_fixtures
+intel_fixtures_default
 services_fixtures
 run_json --redact-ip
 assert_true "schema" validate
