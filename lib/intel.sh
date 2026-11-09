@@ -365,6 +365,88 @@ qvk_geo_consensus() {
     note "$(json_str "countries as reported by the listed services; says nothing about whether a given service works")")
 }
 
+# Regions where Claude blocks or heavily restricts access, as listed by the
+# net.coffee frontend on 2026-11-09. The date and source are part of the rule:
+# the list can change, and Claude's own policy is not ours to state.
+QVK_CLAUDE_RESTRICTED="CN HK MO RU KP IR SY CU BY VE"
+
+QVK_CLAUDE_RISK_JSON="" QVK_CLAUDE_RISK_LEVEL="" QVK_CLAUDE_RISK_COUNTRY=""
+QVK_CLAUDE_RISK_TRUST="" QVK_CLAUDE_RISK_RESTRICTED=""
+QVK_CLAUDE_RISK_REASONS=()
+
+# Turn the collected IP facts into a documented risk level for Claude.
+# Rules: docs/methodology.md. One provider's judgement, not Claude's decision.
+qvk_claude_risk_evaluate() {
+  local country trust resid level="" restricted="" r has_high=0 has_med=0
+  local -a reasons=() uniq=() rj=()
+  country=$QVK_NC_COUNTRY
+  [[ -n $country ]] || country=${QVK_GEO[ipinfo]:-}
+  if [[ -z $country && -n ${QVK_GEO_COUNTRIES:-} ]]; then
+    read -r -a uniq <<<"$QVK_GEO_COUNTRIES"
+    ((${#uniq[@]} == 1)) && country=${uniq[0]}
+  fi
+  [[ $country =~ ^[A-Z]{2}$ ]] || country=""
+  trust=$QVK_NC_TRUST
+  resid=$QVK_NC_RESID
+  if [[ -n $country ]]; then
+    if [[ " $QVK_CLAUDE_RESTRICTED " == *" $country "* ]]; then
+      restricted=true
+    else
+      restricted=false
+    fi
+  fi
+  QVK_CLAUDE_RISK_COUNTRY=$country
+  QVK_CLAUDE_RISK_TRUST=$trust
+  QVK_CLAUDE_RISK_RESTRICTED=$restricted
+  if ((${QVK_OFFLINE:-0})) || [[ -z $QVK_TARGET_IP ]]; then
+    level=unknown reasons=(no_data)
+  else
+    [[ $restricted == true ]] && reasons+=(restricted_region)
+    [[ $QVK_NC_TOR == true ]] && reasons+=(tor_exit)
+    [[ $QVK_NC_CRAWLER == true ]] && reasons+=(crawler)
+    if [[ -n $trust ]] && ((trust < 50)); then
+      reasons+=(low_trust_score)
+    elif [[ -n $trust ]] && ((trust < 80)); then
+      reasons+=(moderate_trust_score)
+    fi
+    [[ $QVK_NC_ABUSER == true ]] && reasons+=(abuse_history)
+    [[ $QVK_NC_VPN == true || $QVK_NC_PROXY == true ]] && reasons+=(vpn_or_proxy)
+    [[ $resid == false ]] && reasons+=(hosting_asn)
+    if [[ -n $trust ]] && ((trust >= 80)) && [[ -z $resid ]] && ((${#reasons[@]} == 0)); then
+      reasons+=(residential_unknown)
+    fi
+    for r in "${reasons[@]}"; do
+      case $r in
+        restricted_region | tor_exit | crawler | low_trust_score) has_high=1 ;;
+        *) has_med=1 ;;
+      esac
+    done
+    if ((has_high)); then
+      level=high
+    elif ((has_med)); then
+      level=medium
+    elif [[ -n $trust ]] && ((trust >= 80)) && [[ $resid == true ]]; then
+      level=low
+    elif ((QVK_NC_OK == 0)); then
+      level=unknown reasons=(source_unavailable)
+    else
+      level=unknown reasons=(no_data)
+    fi
+  fi
+  QVK_CLAUDE_RISK_LEVEL=$level
+  QVK_CLAUDE_RISK_REASONS=("${reasons[@]}")
+  for r in "${reasons[@]}"; do rj+=("$(json_str "$r")"); done
+  QVK_CLAUDE_RISK_JSON=$(json_obj \
+    level "$(json_str "$level")" \
+    reasons "$(json_arr "${rj[@]}")" \
+    restricted_region "$(json_bool "$restricted")" \
+    country "$(json_str_or_null "$country")" \
+    trust_score "$(json_num "$trust")" \
+    residential "$(json_bool "$resid")" \
+    checked_ip "$(json_str_or_null "$QVK_TARGET_IP")" \
+    note "$(json_str "judgement by one third-party service (net.coffee); what Claude itself decides is unknown")")
+}
+
 qvk_intel_run() {
   if ((QVK_OFFLINE)); then
     _intel_skip_all offline_mode "--offline: no external requests" net.offline

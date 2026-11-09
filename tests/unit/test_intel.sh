@@ -32,6 +32,11 @@ INFO_HOSTING=$'{\n  "ip": "203.0.113.10",\n  "country": "DE",\n  "org": "AS64500
 ABUSE_OK='{"data":{"ipAddress":"203.0.113.10","isPublic":true,"abuseConfidenceScore":12,"countryCode":"DE","usageType":"Data Center/Web Hosting/Transit","isp":"Example Hosting","totalReports":3}}'
 NC_URL="https://ip.net.coffee/api/iprisk/$IP"
 NC_OK='{"ip":"203.0.113.10","cidr":"203.0.113.0/24","is_bogon":false,"is_datacenter":true,"isResidential":false,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false,"asn":64500,"asOrganization":"Example Hosting GmbH","country":"Germany","countryCode":"de","trust_score":41,"rdns":"203-0-113-10.example.net"}'
+NC_CLEAN='{"ip":"203.0.113.10","isResidential":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false,"asn":64500,"asOrganization":"Example Home ISP","country":"Germany","countryCode":"de","trust_score":92}'
+NC_RESTRICTED='{"ip":"203.0.113.10","isResidential":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false,"country":"Russia","countryCode":"ru","trust_score":88}'
+NC_TOR='{"ip":"203.0.113.10","isResidential":true,"is_tor":true,"is_vpn":false,"is_proxy":false,"is_crawler":false,"is_abuser":false,"countryCode":"de","trust_score":95}'
+NC_ABUSER='{"ip":"203.0.113.10","isResidential":true,"is_abuser":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"countryCode":"de","trust_score":88}'
+INFO_RU=$'{\n  "ip": "203.0.113.10",\n  "country": "RU",\n  "org": "AS64500 Example Hosting GmbH"\n}'
 
 # intel_base [ripe_rc ripe_code ripe_body info_rc info_code info_body nc_rc nc_code nc_body]
 intel_fixtures() {
@@ -39,6 +44,13 @@ intel_fixtures() {
   fix "" "$INFO_URL" "${4:-0}" "${5:-200}" "${6:-$INFO_OK}"
   fix "" "$ABUSE_URL" 0 200 "$ABUSE_OK"
   fix "" "$NC_URL" "${7:-0}" "${8:-200}" "${9:-$NC_OK}"
+}
+
+# risk_fixtures <nc rc> <nc body> [info body]: one run with a chosen netcoffee answer
+risk_fixtures() {
+  scenario 0 0 0
+  services_fixtures
+  intel_fixtures 0 200 "$RIPE_OK" 0 200 "${3:-$INFO_OK}" "$1" 200 "$2"
 }
 
 # services_fixtures: gentle HTTP checks of the default endpoint list
@@ -124,6 +136,8 @@ assert_eq 'false' "$(sf netcoffee residential)" "residential parsed"
 assert_eq 'true' "$(sf netcoffee hosting)" "isResidential=false reported as hosting"
 assert_eq 'null' "$(sf ripestat trust_score)" "other sources keep null"
 assert_not_contains "$(cat "$R")" "203-0-113-10.example.net" "rdns is never copied"
+assert_contains "$human" "Claude risk" "human risk line"
+assert_contains "$human" "low trust score" "risk reason rendered"
 
 echo "# HTTP reachability classification"
 fix "" https://vk.com/robots.txt 0 403 'forbidden'
@@ -153,6 +167,7 @@ assert_eq '"suitable"' "$(jf summary.verdicts.target_self_check.verdict)" "servi
 human=$("$REPO_ROOT/qvk" run --lang ru 2>/dev/null)
 assert_contains "$human" "HTTP ru_hosted/vk" "human label for service check"
 assert_contains "$human" "решение сервиса, а не сетевая фильтрация" "russian 403 wording"
+assert_contains "$human" "риск для Claude" "russian risk label"
 
 echo "# geo conflict between services"
 scenario 0 0 0
@@ -242,6 +257,53 @@ assert_eq '"warn"' "$(tf intel_ripestat status)" "unannounced prefix -> warn"
 assert_eq 'false' "$(sf ripestat announced)" "announced=false recorded"
 assert_eq 'null' "$(sf ripestat asn)" "no asn when unannounced"
 
+echo "# claude risk levels and reasons"
+risk_fixtures 0 "$NC_OK"
+run_json
+assert_true "schema" validate
+assert_eq '"high"' "$(jf ip_intelligence.claude_risk.level)" "hosting + low score -> high"
+assert_eq '["low_trust_score","hosting_asn"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "reasons listed in a stable order"
+assert_eq '"DE"' "$(jf ip_intelligence.claude_risk.country)" "country recorded"
+assert_eq 'false' "$(jf ip_intelligence.claude_risk.restricted_region)" "not a restricted region"
+assert_eq '41' "$(jf ip_intelligence.claude_risk.trust_score)" "trust score recorded"
+assert_eq 'false' "$(jf ip_intelligence.claude_risk.residential)" "residential property recorded"
+assert_eq '"203.0.113.10"' "$(jf ip_intelligence.claude_risk.checked_ip)" "checked ip recorded"
+
+risk_fixtures 0 "$NC_CLEAN"
+run_json
+assert_true "schema" validate
+assert_eq '"low"' "$(jf ip_intelligence.claude_risk.level)" "clean residential IP -> low"
+assert_eq '[]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "no reasons for a clean IP"
+
+risk_fixtures 0 "$NC_RESTRICTED"
+run_json
+assert_true "schema" validate
+assert_eq '"high"' "$(jf ip_intelligence.claude_risk.level)" "restricted region -> high"
+assert_eq '["restricted_region"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "restricted region reason"
+assert_eq 'true' "$(jf ip_intelligence.claude_risk.restricted_region)" "restricted flag set"
+
+risk_fixtures 0 "$NC_TOR"
+run_json
+assert_eq '"high"' "$(jf ip_intelligence.claude_risk.level)" "tor exit -> high"
+assert_eq '["tor_exit"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "tor reason"
+
+risk_fixtures 0 "$NC_ABUSER"
+run_json
+assert_eq '"medium"' "$(jf ip_intelligence.claude_risk.level)" "abuse history -> medium"
+assert_eq '["abuse_history"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "abuse reason"
+
+risk_fixtures 28 ''
+run_json
+assert_true "schema" validate
+assert_eq '"unknown"' "$(jf ip_intelligence.claude_risk.level)" "risk service down -> unknown"
+assert_eq '["source_unavailable"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "source_unavailable reason"
+
+risk_fixtures 28 '' "$INFO_RU"
+run_json
+assert_true "schema" validate
+assert_eq '"high"' "$(jf ip_intelligence.claude_risk.level)" "restricted country known without the risk service -> high"
+assert_eq '["restricted_region"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "region reason without the risk service"
+
 echo "# --redact-ip"
 scenario 0 0 0
 intel_fixtures
@@ -255,6 +317,8 @@ assert_eq 'null' "$(sf ripestat prefix)" "prefix removed"
 assert_eq 'null' "$(sf ipinfo hostname)" "hostname removed"
 assert_eq '64500' "$(sf ripestat asn)" "ASN kept"
 assert_eq '"DE"' "$(sf ipinfo country)" "country kept"
+assert_eq 'null' "$(jf ip_intelligence.claude_risk.checked_ip)" "checked_ip removed with --redact-ip"
+assert_contains "$human" "Claude risk" "human risk line survives redaction"
 human=$("$REPO_ROOT/qvk" run --redact-ip 2>/dev/null)
 assert_not_contains "$human" "203.0.113" "human output has no address or prefix"
 assert_contains "$human" "AS64500 EXAMPLE-AS - Example Hosting GmbH" "human ripestat line without prefix"

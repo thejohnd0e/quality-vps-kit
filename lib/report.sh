@@ -109,7 +109,8 @@ _qvk_report_json_raw() {
     jq "$(json_str_or_null "$(qvk_tool_version jq)")")
   target=$(json_obj id "$(json_str target)" ip "$(json_str_or_null "$QVK_TARGET_IP")" \
     nat "$(json_str "$QVK_TARGET_NAT")")
-  ipintel=$(json_obj sources "$(json_arr "${QVK_INTEL_SOURCES[@]}")" geo_consensus "$QVK_GEO_JSON")
+  ipintel=$(json_obj sources "$(json_arr "${QVK_INTEL_SOURCES[@]}")" geo_consensus "$QVK_GEO_JSON" \
+    claude_risk "${QVK_CLAUDE_RISK_JSON:-null}")
   summary=$(json_obj verdicts "$(json_obj \
     target_self_check "$(_qvk_verdict_json "$QVK_SELF_VERDICT" "$QVK_SELF_REASON_CODE" \
       QVK_SELF_REASONS QVK_SELF_MISSING)" \
@@ -281,6 +282,29 @@ _qvk_human_geo() {
   printf '  %s %s %s\n' "$(qvk_pad "" 8)" "$(qvk_pad "$(msg report.geo)" 22)" "$line"
 }
 
+_qvk_human_claude_risk() {
+  [[ -n ${QVK_CLAUDE_RISK_LEVEL:-} ]] || return 0
+  local level text r reasons=""
+  local -a parts=()
+  for r in "${QVK_CLAUDE_RISK_REASONS[@]}"; do
+    parts+=("$(msg "claude_risk.reason.$r")")
+  done
+  if ((${#parts[@]})); then
+    printf -v reasons '%s, ' "${parts[@]}"
+    reasons=${reasons%, }
+  fi
+  level=$(msg "claude_risk.level.$QVK_CLAUDE_RISK_LEVEL")
+  text=$level
+  [[ -n $reasons ]] && text+=" — $reasons"
+  [[ -n $QVK_CLAUDE_RISK_TRUST ]] && text+=" ($(msg claude_risk.trust "$QVK_CLAUDE_RISK_TRUST"))"
+  case $QVK_CLAUDE_RISK_LEVEL in
+    high) text=$(qvk_paint red "$text") ;;
+    medium | unknown) text=$(qvk_paint yellow "$text") ;;
+    *) text=$(qvk_paint green "$text") ;;
+  esac
+  _qvk_human_field report.claude_risk "$text"
+}
+
 _qvk_test_label() {
   local id=$1 rest cat
   if qvk_msg_has "test.$id"; then
@@ -333,6 +357,7 @@ _qvk_report_human_raw() {
   _qvk_human_tests network_egress report.section.network
   _qvk_human_tests ip_intelligence report.section.intel
   _qvk_human_geo
+  _qvk_human_claude_risk
   _qvk_human_tests http_reachability report.section.http
   printf '\n%s\n' "$(qvk_paint bold "$(msg report.verdicts)")"
   _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" QVK_SELF_REASONS QVK_SELF_MISSING
