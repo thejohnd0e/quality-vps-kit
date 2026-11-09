@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Release preflight must catch drift before producing any archive.
 set -uo pipefail
+# shellcheck source=tests/lib/assert.sh
 source "$(dirname -- "${BASH_SOURCE[0]}")/../lib/assert.sh"
 
 command -v git >/dev/null 2>&1 || { echo "skipped: git not installed"; exit 0; }
@@ -91,7 +92,7 @@ if [[ -f $WORKFLOW ]]; then
   verify_step=$(sed -n '/name: Verify published release/,$p' "$WORKFLOW")
   assert_contains "$verify_step" 'GH_TOKEN:' "release verification has GitHub API auth"
   assert_contains "$(cat "$WORKFLOW")" 'GITHUB_REF_NAME' "workflow checks the triggering tag identity"
-  assert_contains "$(cat "$WORKFLOW")" 'GITHUB_REF_NAME" != "$expected_tag"' "mismatched trigger tag is rejected before publishing"
+  assert_contains "$(cat "$WORKFLOW")" "GITHUB_REF_NAME\" != \"\$expected_tag\"" "mismatched trigger tag is rejected before publishing"
   assert_contains "$verify_step" 'SHA256SUMS' "asset verification checks the checksum asset"
   assert_contains "$verify_step" 'quality-vps-kit-' "asset verification checks the archive asset"
   assert_contains "$verify_step" 'grep -Fxq' "asset verification fails when an exact asset is missing"
