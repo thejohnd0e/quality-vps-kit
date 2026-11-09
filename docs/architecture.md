@@ -82,6 +82,8 @@ never from the exit code.
 
 ### D5. Report schema and versioning
 
+Tool versioning and the release procedure are documented in [docs/release.md](release.md).
+
 `schema/report.schema.json` (JSON Schema 2020-12) is the contract;
 `schema/examples/*.json` must validate in CI.
 
