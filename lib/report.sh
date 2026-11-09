@@ -313,7 +313,8 @@ _qvk_test_label() {
     rest=${id#http_}
     cat=${rest%%_*}
     [[ $rest == ru_hosted_* ]] && cat=ru_hosted
-    msg test.http "$cat" "${rest#"${cat}"_}"
+    name=${rest#"${cat}"_}
+  if qvk_msg_has "test.$name"; then msg "test.$name"; else msg test.http "$cat" "$name"; fi
   elif [[ $id == https_* ]]; then
     msg test.https "${id#https_}"
   elif [[ $id == icmp_rtt_ru_* ]]; then
@@ -326,13 +327,19 @@ _qvk_test_label() {
 }
 
 _qvk_human_tests() {
-  local section=$1 title_key=$2 rec sec id status hmsg hargs n=0
+  local section=$1 title_key=$2 rec sec id status hmsg hargs grp n=0 prev_group=""
   local -a args
   for rec in "${QVK_TEST_HUMAN[@]}"; do
     IFS=$QVK_US read -r sec id status hmsg hargs <<<"$rec"
     [[ $sec == "$section" ]] || continue
     if ((n++ == 0)) && [[ -n $title_key ]]; then
       printf '\n%s\n' "$(qvk_paint bold "$(msg "$title_key")")"
+    fi
+    grp=${QVK_TEST_GROUP[$id]:-}
+    # Logical sub-groups for HTTP reachability: one bold line per category.
+    if [[ $section == http_reachability && -n $grp && $grp != "$prev_group" ]]; then
+      printf '  %s\n' "$(qvk_paint bold "$(msg "report.group.$grp")")"
+      prev_group=$grp
     fi
     args=()
     [[ -n $hargs ]] && IFS=$QVK_US read -r -a args <<<"$hargs"

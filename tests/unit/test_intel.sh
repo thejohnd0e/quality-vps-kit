@@ -133,7 +133,7 @@ assert_eq '{"method":"cloudflare_trace_loc","country":"DE"}' \
   "$(tf http_ai_chatgpt details.region_signal | tr -d ' ')" "region signal from cdn-cgi/trace"
 assert_eq '"suitable"' "$(jf summary.verdicts.target_self_check.verdict)" "service denials do not make the VPS unsuitable"
 human=$("$REPO_ROOT/qvk" run --lang ru 2>/dev/null)
-assert_contains "$human" "HTTP ru_hosted/vk" "human label for service check"
+assert_contains "$human" "VK" "human label for service check"
 assert_contains "$human" "решение сервиса, а не сетевая фильтрация" "russian 403 wording"
 assert_contains "$human" "риск для Claude" "russian risk label"
 

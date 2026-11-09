@@ -9,6 +9,7 @@
 
 QVK_TESTS=()
 QVK_TEST_HUMAN=()   # "section<US>id<US>status<US>hmsg<US>hargs..."
+declare -A QVK_TEST_GROUP=()    # id -> group (for http_reachability sub-headings)
 
 QVK_US=$'\x1f'
 
@@ -16,7 +17,7 @@ qvk_add_test() {
   local -A t=(
     [vantage]=target [endpoint]="" [diagnosis]="" [http_outcome]="" [reason_code]=""
     [reason]="" [samples]="" [timeout_ms]="" [duration_ms]=0 [traffic_bytes]=0
-    [error]="" [metrics]="{}" [details]="" [hmsg]="" [hargs]=""
+    [error]="" [metrics]="{}" [details]="" [hmsg]="" [hargs]="" [group]=""
   )
   local kv k
   for kv in "$@"; do
@@ -56,4 +57,5 @@ qvk_add_test() {
   )
   QVK_TESTS+=("$(json_obj "${fields[@]}")")
   QVK_TEST_HUMAN+=("${t[section]}$QVK_US${t[id]}$QVK_US${t[status]}$QVK_US${t[hmsg]}$QVK_US${t[hargs]}")
+  [[ -n ${t[group]:-} ]] && QVK_TEST_GROUP["${t[id]}"]=${t[group]}
 }
