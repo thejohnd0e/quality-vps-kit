@@ -6,13 +6,41 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 cd "$root"
 
-if [[ -n $(git status --porcelain --untracked-files=no) ]]; then
-  echo "release.sh: the working tree has uncommitted changes; commit first" >&2
-  exit 1
-fi
+check_only=0
+out=""
+while (($#)); do
+  case $1 in
+    --check) check_only=1 ;;
+    -h | --help)
+      echo "usage: scripts/release.sh [--check] [output-dir]"
+      exit 0
+      ;;
+    *)
+      [[ -z $out ]] || { echo "release.sh: unexpected argument: $1" >&2; exit 2; }
+      out=$1
+      ;;
+  esac
+  shift
+done
 
+_release_error() { echo "release.sh: $*" >&2; exit 2; }
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || _release_error "not inside a git work tree"
+[[ -z $(git status --porcelain --untracked-files=no) ]] || _release_error "the working tree has uncommitted changes; commit first"
+git ls-files --error-unmatch VERSION >/dev/null 2>&1 || _release_error "VERSION is not tracked"
 version=$(tr -d '[:space:]' <VERSION)
-out=${1:-"$root/dist"}
+[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || _release_error "VERSION must be x.y.z"
+tag="v$version"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 || _release_error "git tag $tag is missing"
+tag_commit=$(git rev-parse "$tag^{commit}")
+head_commit=$(git rev-parse HEAD)
+[[ $tag_commit == "$head_commit" ]] || _release_error "tag $tag does not point to HEAD"
+grep -qF -- "QVK_VERSION:-$version" install.sh || _release_error "install.sh default does not match VERSION $version"
+
+echo "release.sh: checks passed: $tag"
+((check_only)) && exit 0
+
+out=${out:-"$root/dist"}
 name="quality-vps-kit-$version"
 mkdir -p -- "$out"
 
