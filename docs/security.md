@@ -23,7 +23,11 @@ are printed as text and never applied.
 ## What leaves the machine
 
 Without `--offline`, `qvk` makes HTTPS requests, each with a `quality-vps-kit/<version>`
-User-Agent, no cookies and no redirects followed:
+User-Agent, no cookies and no redirects followed. The `service_geo` probes are the one
+exception: they present a browser User-Agent, because those pages answer a tool
+User-Agent with a stub page instead of the service's real answer. The three probes are
+`youtube.com/premium`, `primevideo.com` and the Spotify signup API; they ask the same
+question a browser asks and change nothing.
 
 | Destination | What it learns |
 |---|---|
@@ -33,6 +37,12 @@ User-Agent, no cookies and no redirects followed:
 | public DNS resolvers 1.1.1.1 and 8.8.8.8 (profile `full`, `dig`) | the VPS's public IP and the baseline host names |
 | `tracepath`/`ping` targets (baseline and Russia-hosted hosts, profile `full`) | the VPS's public IP |
 | baseline, `rtt_ru`, `ai`, `media`, `ru_hosted` endpoints from `config/endpoints.tsv` | the VPS's public IP and that a request was made to that host |
+| `service_geo` probes (`youtube.com/premium`, `primevideo.com`, Spotify signup API) | the VPS's public IP and that a request was made to that host |
+
+Spotify's signup endpoint receives Spotify's own published web-client key, the one
+that ships inside spotify.com pages. It is not a user secret, it is not read from the
+environment and it never reaches a report, a log or the recorded endpoint — the row
+stores the bare path. Tests assert that.
 
 Nothing from the report is uploaded anywhere; the report is written locally.
 `--offline` makes **no** external request. Use `--endpoints FILE` to run with your own

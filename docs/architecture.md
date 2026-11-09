@@ -88,7 +88,9 @@ Tool versioning and the release procedure are documented in [docs/release.md](re
 `schema/examples/*.json` must validate in CI.
 
 - `schema_version` is `0.x` until 1.0; a minor bump may break compatibility.
-  From 1.0: semver (breaking change = major).
+  From 1.0: semver (breaking change = major). Adding a value to `$defs/section`
+  (an informational section such as `service_geo`) is additive and needs no bump:
+  old reports stay valid and new rows are ordinary `tests[]` records.
 - Unknown values are `null`. Units are key suffixes: `_ms`, `_s`, `_mbps`, `_bytes`,
   `_pct`, `_mb`. `metrics` holds numbers/null only; non-numeric facts go to `details`.
 - `status`, `diagnosis`, `reason_code` and `http_outcome` are separate fields with

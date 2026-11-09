@@ -182,6 +182,35 @@ One gentle GET per endpoint (`ai`, `media`, `ru_hosted` categories).
 - Captchas are never bypassed. A successful GET proves nothing about an account,
   streaming or payments.
 
+### Service geo restrictions (`service_geo`)
+
+For a VPS considered as a VPN exit: does a service restrict this exit **because of its
+country**? One gentle GET per service, browser User-Agent (those pages serve a stub to
+a tool User-Agent), no redirects followed, no captcha and no anti-bot signals here.
+
+| Service | `country_restricted` when | `none` (available) when |
+|---|---|---|
+| YouTube Premium | the page says "not available in your country" | a premium product marker (`ypc`) is present |
+| Prime Video | the answer redirects to `/servicerestricted` | the answer redirects to the service's own offers path |
+| Spotify signup | `is_country_launched` is `false` | `is_country_launched` is `true` |
+
+Rules:
+
+- **Fail closed.** `none` requires positive evidence. When the answer carries no
+  decisive marker the row is `unknown` with `insufficient_data` — never "available".
+  A wording change therefore degrades the row; it cannot invent a restriction.
+- `country_restricted` is a policy of the service for the country of this address.
+  It is not network filtering, not a verdict, and not proof that a VPN will or will not
+  work for a particular account.
+- A 3xx is not automatically a restriction; redirects are not followed. HTTP 403/429
+  mean `unknown` with `http_denied`/`rate_limited` — the service's decision, not a
+  country fact. A timeout is `fail`, like every other network measurement.
+- `country` is what the service itself reported, or `null` when it reported none. Two
+  services may disagree about the same address; that is their data, not an error.
+- `--offline` sends nothing and the row is `skipped`/`offline_mode`.
+- Captchas, anti-bot pages and catalogue comparisons are out of scope: they describe
+  the address or the region's catalogue, not a country restriction.
+
 ## 4. `target_self_check` (v0.1 built-in preset)
 
 | Criterion | Violation (`fail`) | Unknown |

@@ -59,6 +59,7 @@ Prefer to read the code first? Clone the repository and run `./qvk doctor`, then
 | Network (measured from this VPS) | external IP and NAT, DNS, HTTPS timings, RTT to Russian hosts, clock offset |
 | IP reputation | ASN, prefix, country as seen by several services (agreement, not a score), plus this IP's risk for Claude |
 | Service reactions | whether popular sites answer, deny (403/429) or time out from this IP |
+| Service restrictions | whether a service restricts this exit by country (YouTube Premium, Prime Video, Spotify signup) |
 | Verdicts | `target_self_check`: is the server itself sound. `client_reachability`: always `indeterminate` in v0.1 (needs a probe on the client side) |
 
 Each line is `PASS`, `WARN`, `FAIL`, `SKIPPED` or `UNKNOWN`. `WARN` is advice, not a

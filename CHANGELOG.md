@@ -4,6 +4,12 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-09
+
+### Added
+
+- Add the informative `service_geo` section: per-service country restrictions for YouTube Premium, Prime Video and Spotify signup, with a fail-closed `unknown` when the answer carries no decisive marker.
+
 ## [0.1.1] - 2026-11-09
 
 ### Added
