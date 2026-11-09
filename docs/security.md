@@ -29,6 +29,7 @@ User-Agent, no cookies and no redirects followed:
 |---|---|
 | echo services (Cloudflare trace, ipify, AWS checkip) | the VPS's public IP (that is their purpose) |
 | RIPEstat, IPinfo, AbuseIPDB | the VPS's public IP |
+| `ip.net.coffee` (`/api/iprisk`) | the VPS's public IP |
 | public DNS resolvers 1.1.1.1 and 8.8.8.8 (profile `full`, `dig`) | the VPS's public IP and the baseline host names |
 | `tracepath`/`ping` targets (baseline and Russia-hosted hosts, profile `full`) | the VPS's public IP |
 | baseline, `rtt_ru`, `ai`, `media`, `ru_hosted` endpoints from `config/endpoints.tsv` | the VPS's public IP and that a request was made to that host |
@@ -37,7 +38,8 @@ Nothing from the report is uploaded anywhere; the report is written locally.
 `--offline` makes **no** external request. Use `--endpoints FILE` to run with your own
 list. Third-party services have their own terms and rate limits; the defaults are
 chosen to be gentle (small documents, one request per endpoint, at most one retry for
-the intelligence APIs).
+the intelligence APIs). `ip.net.coffee` is an undocumented endpoint of a third-party
+site: a failure there only removes one source and one risk factor from the report.
 
 ## Secrets
 

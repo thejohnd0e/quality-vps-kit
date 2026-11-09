@@ -292,6 +292,11 @@ run_json
 assert_eq '"medium"' "$(jf ip_intelligence.claude_risk.level)" "abuse history -> medium"
 assert_eq '["abuse_history"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "abuse reason"
 
+risk_fixtures 0 '{"countryCode":"de","trust_score":92}'
+run_json
+assert_eq '"medium"' "$(jf ip_intelligence.claude_risk.level)" "good score, unknown property -> medium"
+assert_eq '["residential_unknown"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "residential_unknown reason"
+
 risk_fixtures 28 ''
 run_json
 assert_true "schema" validate

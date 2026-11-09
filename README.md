@@ -57,7 +57,7 @@ Prefer to read the code first? Clone the repository and run `./qvk doctor`, then
 | System | CPU, memory, disk, virtualization, MTU, IPv4/IPv6, firewall, forwarding |
 | VPN readiness | AES acceleration, `/dev/net/tun`, BBR, UDP buffers, ports already in use |
 | Network (measured from this VPS) | external IP and NAT, DNS, HTTPS timings, RTT to Russian hosts, clock offset |
-| IP reputation | ASN, prefix, country as seen by several services (agreement, not a score) |
+| IP reputation | ASN, prefix, country as seen by several services (agreement, not a score), plus this IP's risk for Claude |
 | Service reactions | whether popular sites answer, deny (403/429) or time out from this IP |
 | Verdicts | `target_self_check`: is the server itself sound. `client_reachability`: always `indeterminate` in v0.1 (needs a probe on the client side) |
 

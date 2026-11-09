@@ -116,8 +116,11 @@ reasons accumulate.
 6. `trust_score < 50` → `high` [`low_trust_score`]; `50..79` → at least `medium` [`moderate_trust_score`]
 7. `vpn` or `proxy` → at least `medium` [`vpn_or_proxy`]
 8. `residential == false` → at least `medium` [`hosting_asn`]
-9. source failed and no country → `unknown` [`source_unavailable`]
-10. otherwise, `trust_score >= 80` and `residential == true` and no flags → `low`
+9. `residential` unknown while `trust_score >= 80` and nothing else matched →
+   at least `medium` [`residential_unknown`] (added during implementation: without it
+   the ladder had no bucket for "good score, property unknown")
+10. source failed and no country → `unknown` [`source_unavailable`]
+11. otherwise, `trust_score >= 80` and `residential == true` and no flags → `low`
 
 Restricted list (from the net.coffee frontend on 2026-11-09, where the browser
 forces the score to 0): CN, HK, MO, RU, KP, IR, SY, CU, BY, VE. Recorded with its
@@ -131,8 +134,11 @@ its IP is a hosting IP. That is the honest answer, not a defect.
 One line under the IP-intelligence section, next to the geo line:
 
 ```
-  Claude risk        medium — hosting ASN, trust score 41 (net.coffee; their judgement)
+  Claude risk        medium — hosting (datacenter) IP, low trust score (net.coffee trust score 41)
 ```
+
+The line is always printed, including `unknown — no data` and
+`unknown — risk service did not answer`: a silently missing line reads as a bug.
 
 i18n keys `claude_risk.*` in `lib/i18n/en.sh` and `ru.sh`; JSON keys stay English.
 
@@ -156,7 +162,5 @@ no cookies), and the "at most one retry" rule already covers it.
 
 ## Left to the builder
 
-Exact i18n wording, the human-line padding, and whether the level line is printed
-when the source is `skipped` (proposal: print it only for `low|medium|high|unknown`
-with `country` or `trust_score` known, otherwise omit the line and keep the source
-row's reason).
+Exact i18n wording and the human-line padding. Decided during implementation: the
+line is always printed (including `unknown`), because a missing line reads as a bug.

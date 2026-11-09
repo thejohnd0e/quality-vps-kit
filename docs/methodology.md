@@ -118,6 +118,10 @@ Each source is a separate record with its own status and timestamp.
   count. The adapter follows the documented v2 `check` endpoint but has **not** been
   verified against the live service in this repository's tests (no key was available);
   it is covered by fixtures only.
+- **net.coffee** (`ip.net.coffee/api/iprisk/<ip>`, no key): one provider's trust score
+  plus `vpn` / `proxy` / `tor` / `crawler` / `abuser` flags. The endpoint is
+  undocumented, so it is also covered by fixtures only; its failure only degrades the
+  report.
 
 Reading the results:
 
@@ -130,6 +134,39 @@ Reading the results:
   AbuseIPDB, the `loc=` line of Cloudflare `cdn-cgi/trace` pages). It shows how
   different services *see* the address. `geo_conflict` is `null` with fewer than two
   sources. It does not say whether a given service works.
+
+### Claude risk (`ip_intelligence.claude_risk`)
+
+How much risk this VPS's own egress IP carries for working through Claude. It is a
+judgement about the address, not about an account, and not a verdict area: the
+`ip_intelligence` section stays informational in v0.1.
+
+Rules. Every matching factor is listed in `reasons`; the level is the worst bucket:
+
+| Level | Factors |
+|---|---|
+| `high` | country in the restricted list; Tor exit; known crawler; trust score < 50 |
+| `medium` | abuse history; trust score 50-79; VPN or proxy exit; hosting (datacenter) IP; residential property unknown |
+| `low` | trust score >= 80, residential IP, none of the factors above |
+| `unknown` | no data, or the risk service did not answer (a country reported by another source still counts) |
+
+Restricted list (checked 2026-11-09 against the net.coffee page script, which forces
+the displayed score to 0 for these): CN, HK, MO, RU, KP, IR, SY, CU, BY, VE. Recorded
+with its date and source because it can change; what Claude itself enforces is not
+observable from here.
+
+Reading the result:
+
+- A plain VPS is `medium` at best, because its address is a hosting address. That is
+  the honest answer, not a defect.
+- `trust_score` is one provider's figure; the level is our rule applied to it, not a
+  probability that Claude will act.
+- The region factor does not depend on the third-party service: with IPinfo or the
+  geo consensus reporting a restricted country, the level is `high` even when
+  net.coffee is unreachable.
+- `checked_ip` is the address that was looked up and is redacted like every other
+  address with `--redact-ip`.
+- What Claude itself decides (captcha, refusal, account action) is unknown to `qvk`.
 
 ### HTTP reachability of services
 
