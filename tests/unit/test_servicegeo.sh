@@ -26,6 +26,7 @@ H="$WORK/h.txt"
 host debian12-kvm-amd64
 
 YT_URL='https://www.youtube.com/premium?hl=en'
+PV_URL='https://www.primevideo.com/'
 
 # Marker-bearing bodies, reduced from the capture recorded in the plan workspace.
 YT_AVAILABLE='<html><script>var ytcfg={"ypcOffers":[],"countryCode":"US","ypcGetOffersEndpoint":"/youtubei/v1"};</script>YouTube Premium</html>'
@@ -65,6 +66,13 @@ sg_fixtures() {
   services_fixtures
   intel_fixtures
   fix "" "$YT_URL" "${1:-0}" "${2:-200}" "${3:-$YT_AVAILABLE}" 0.025000 "${4:-}"
+  fix "" "$PV_URL" 0 302 '' 0.025000 'location: /offers/nonprimehomepage'
+}
+
+# pv_fixtures <code> <location>: Prime Video answers with a redirect and no body
+pv_fixtures() {
+  sg_fixtures 0 200 "$YT_AVAILABLE"
+  fix "" "$PV_URL" 0 "${1:-302}" '' 0.025000 "location: ${2:-/offers/nonprimehomepage}"
 }
 
 echo "# available with a product marker"
@@ -125,6 +133,34 @@ run_json --offline
 assert_eq '"skipped"' "$(tf sg_youtube_premium status)" "offline -> skipped"
 assert_eq '"offline_mode"' "$(tf sg_youtube_premium reason_code)" "offline reason"
 assert_eq '0' "$(count_calls youtube.com)" "no request to YouTube offline"
+
+echo "# prime video: the redirect target is the signal"
+pv_fixtures 302 /servicerestricted
+run_json
+assert_eq '"warn"' "$(tf sg_prime_video status)" "servicerestricted -> warn"
+assert_eq '"country_restricted"' "$(tf sg_prime_video details.restriction)" "servicerestricted -> restricted"
+assert_eq '"restriction_marker"' "$(tf sg_prime_video details.evidence)" "evidence is the redirect"
+
+pv_fixtures 302 '/offers/nonprimehomepage?ref_=dv_web_force_root'
+run_json
+assert_eq '"pass"' "$(tf sg_prime_video status)" "own offers page -> available"
+assert_eq '"none"' "$(tf sg_prime_video details.restriction)" "no restriction"
+assert_eq '"redirect"' "$(tf sg_prime_video details.evidence)" "evidence is the redirect"
+
+pv_fixtures 302 'https://consent.example/start'
+run_json
+assert_eq '"unknown"' "$(tf sg_prime_video status)" "redirect to a foreign host -> unknown"
+assert_eq '"unknown"' "$(tf sg_prime_video details.restriction)" "not a country restriction"
+
+pv_fixtures 200 ''
+run_json
+assert_eq '"unknown"' "$(tf sg_prime_video status)" "200 without a marker -> unknown"
+assert_eq '"insufficient_data"' "$(tf sg_prime_video reason_code)" "200 reason"
+
+pv_fixtures 403 ''
+run_json
+assert_eq '"unknown"' "$(tf sg_prime_video status)" "403 -> unknown"
+assert_eq '"http_403"' "$(tf sg_prime_video reason_code)" "403 code"
 
 echo "# human output"
 sg_fixtures 0 200 "$YT_RESTRICTED"

@@ -204,6 +204,7 @@ Read-only оценка нового VPS перед использованием 
   [report.section.http]='HTTP-доступность сервисов (с этого VPS)'
   [report.section.service_geo]='Ограничения сервисов по стране (с этого VPS)'
   [test.sg_youtube_premium]='YouTube Premium'
+  [test.sg_prime_video]='Prime Video'
   [sg.restricted]='ограничено — страна %s'
   [sg.restricted_nc]='ограничено — страна не указана'
   [sg.available]='доступно — страна %s'

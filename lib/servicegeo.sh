@@ -8,7 +8,7 @@
 # Nothing here follows redirects or changes a verdict.
 
 QVK_SG_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
-QVK_SG_SERVICES=(youtube_premium)
+QVK_SG_SERVICES=(youtube_premium prime_video)
 
 # _sg_country <file> [json key] -> two-letter code, upper-cased; empty when absent
 _sg_country() {
@@ -90,6 +90,50 @@ _sg_html() {
 _sg_youtube_premium() {
   _sg_html youtube_premium 'https://www.youtube.com/premium?hl=en' \
     'not available in your country' 'ypc'
+}
+
+# Prime Video answers with a redirect and an empty body: `/servicerestricted`
+# means the country is restricted, its own offers path means the service is
+# served. The Location header is the evidence; redirects are not followed.
+_sg_prime_video() {
+  local url='https://www.primevideo.com/' st loc
+  if ((QVK_OFFLINE)); then
+    QC_TOTAL=0 QC_BYTES=0
+    _sg_emit prime_video skipped unknown "" none offline_mode sg_offline "" "$url"
+    return 0
+  fi
+  qvk_curl sg_prime_video "$url" -A "$QVK_SG_UA"
+  if ((QC_RC == 63)); then
+    _sg_emit prime_video unknown unknown "" none insufficient_data sg_truncated "" "$url"
+    return 0
+  fi
+  read -r st _ <<<"$(qvk_curl_outcome "$QC_RC")"
+  if [[ $st != pass ]]; then
+    _sg_failure prime_video "$url"
+    return 0
+  fi
+  case $QC_CODE in
+    3??)
+      loc=$(grep -i -m1 '^location:' "$QC_HDR" 2>/dev/null | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+      case $loc in
+        *servicerestricted*)
+          _sg_emit prime_video warn country_restricted "" restriction_marker "" sg.restricted_nc "" "$url"
+          ;;
+        /*)
+          _sg_emit prime_video pass none "" redirect "" sg.available_nc "" "$url"
+          ;;
+        *)
+          _sg_emit prime_video unknown unknown "" none http_error sg_failed "$QC_CODE" "$url" unknown
+          ;;
+      esac
+      ;;
+    2??)
+      _sg_emit prime_video unknown unknown "" none insufficient_data sg_unknown "" "$url"
+      ;;
+    *)
+      _sg_failure prime_video "$url"
+      ;;
+  esac
 }
 
 qvk_service_geo_run() {
