@@ -4,7 +4,7 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
-## [0.1.1] - <date>
+## [0.1.1] - 2026-11-09
 
 ### Added
 
