@@ -58,6 +58,23 @@ _jbool() {
     | head -n1 | sed -E 's/^.*:[[:space:]]*//'
 }
 
+# net.coffee fields are untrusted. Require a complete scalar token and its JSON
+# delimiter so prefixes such as `trueish` and `8.9` cannot be misread.
+_nc_num() {
+  grep -m1 -oE "\"$2\"[[:space:]]*:[[:space:]]*[0-9]+([[:space:]]*[,}]|[[:space:]]*$)" "$1" 2>/dev/null \
+    | head -n1 | sed -E 's/^.*:[[:space:]]*//; s/[[:space:],}]//g'
+}
+_nc_bool() {
+  grep -m1 -oE "\"$2\"[[:space:]]*:[[:space:]]*(true|false)([[:space:]]*[,}]|[[:space:]]*$)" "$1" 2>/dev/null \
+    | head -n1 | sed -E 's/^.*:[[:space:]]*//; s/[[:space:],}]//g'
+}
+_nc_json_object() {
+  local first last
+  first=$(sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q;}' "$1")
+  last=$(tac "$1" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;p;q;}')
+  [[ $first == \{* && $last == *\} ]]
+}
+
 # --- request with at most one retry on transient failures -----------------------------
 
 _INTEL_BYTES=0
@@ -296,19 +313,31 @@ _intel_netcoffee() {
       "$(_intel_reason)" intel.fail "$I_CODE"
     return 0
   fi
+  if ! _nc_json_object "$QC_BODY"; then
+    I_CODE=invalid_answer
+    _intel_emit netcoffee netcoffee_iprisk "${QVK_NETCOFFEE_URL}<ip>" unknown "$I_CODE" \
+      "$(_intel_reason)" intel.fail "$I_CODE"
+    return 0
+  fi
   cc=$(_jstr "$QC_BODY" countryCode)
   cc=${cc^^}
   [[ $cc =~ ^[A-Z]{2}$ ]] || cc=""
-  trust=$(_jnum "$QC_BODY" trust_score)
-  if [[ $trust =~ ^[0-9]+$ ]] && ((trust <= 100)); then :; else trust=""; fi
-  asn=$(_jnum "$QC_BODY" asn)
+  trust=$(_nc_num "$QC_BODY" trust_score)
+  if [[ $trust =~ ^[0-9]{1,3}$ ]] && ((10#$trust <= 100)); then
+    while [[ ${#trust} -gt 1 && $trust == 0* ]]; do trust=${trust#0}; done
+  else
+    trust=""
+  fi
+  asn=$(_nc_num "$QC_BODY" asn)
+  [[ $asn =~ ^[0-9]{1,10}$ ]] || asn=""
   holder=$(_jstr "$QC_BODY" asOrganization)
-  resid=$(_jbool "$QC_BODY" isResidential)
-  A_VPN=$(_jbool "$QC_BODY" is_vpn)
-  A_PROXY=$(_jbool "$QC_BODY" is_proxy)
-  A_TOR=$(_jbool "$QC_BODY" is_tor)
-  A_CRAWLER=$(_jbool "$QC_BODY" is_crawler)
-  A_ABUSER=$(_jbool "$QC_BODY" is_abuser)
+  holder=${holder:0:120}
+  resid=$(_nc_bool "$QC_BODY" isResidential)
+  A_VPN=$(_nc_bool "$QC_BODY" is_vpn)
+  A_PROXY=$(_nc_bool "$QC_BODY" is_proxy)
+  A_TOR=$(_nc_bool "$QC_BODY" is_tor)
+  A_CRAWLER=$(_nc_bool "$QC_BODY" is_crawler)
+  A_ABUSER=$(_nc_bool "$QC_BODY" is_abuser)
   if [[ -z $cc && -z $trust && -z $A_VPN && -z $A_PROXY && -z $A_TOR && -z $A_CRAWLER && -z $A_ABUSER ]]; then
     I_CODE=invalid_answer
     _intel_emit netcoffee netcoffee_iprisk "${QVK_NETCOFFEE_URL}<ip>" unknown "$I_CODE" \
@@ -425,8 +454,11 @@ qvk_claude_risk_evaluate() {
       level=high
     elif ((has_med)); then
       level=medium
-    elif [[ -n $trust ]] && ((trust >= 80)) && [[ $resid == true ]]; then
+    elif [[ -n $trust ]] && ((trust >= 80)) && [[ $resid == true ]] &&
+      [[ -n $QVK_NC_VPN && -n $QVK_NC_PROXY && -n $QVK_NC_TOR && -n $QVK_NC_CRAWLER && -n $QVK_NC_ABUSER ]]; then
       level=low
+    elif [[ -n $trust ]] && ((trust >= 80)) && [[ $resid == true ]]; then
+      level=unknown reasons=(risk_flags_unknown)
     elif ((QVK_NC_OK == 0)); then
       level=unknown reasons=(source_unavailable)
     else

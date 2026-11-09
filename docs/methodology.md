@@ -148,7 +148,7 @@ Rules. Every matching factor is listed in `reasons`; the level is the worst buck
 | `high` | country in the restricted list; Tor exit; known crawler; trust score < 50 |
 | `medium` | abuse history; trust score 50-79; VPN or proxy exit; hosting (datacenter) IP; residential property unknown |
 | `low` | trust score >= 80, residential IP, none of the factors above |
-| `unknown` | no data, or the risk service did not answer (a country reported by another source still counts) |
+| `unknown` | no data, incomplete risk flags for an otherwise clean-looking address, or the risk service did not answer (a country reported by another source still counts) |
 
 Restricted list (checked 2026-11-09 against the net.coffee page script, which forces
 the displayed score to 0 for these): CN, HK, MO, RU, KP, IR, SY, CU, BY, VE. Recorded

@@ -120,7 +120,9 @@ reasons accumulate.
    at least `medium` [`residential_unknown`] (added during implementation: without it
    the ladder had no bucket for "good score, property unknown")
 10. source failed and no country → `unknown` [`source_unavailable`]
-11. otherwise, `trust_score >= 80` and `residential == true` and no flags → `low`
+11. `trust_score >= 80`, `residential == true`, but one or more risk flags are unknown
+    → `unknown` [`risk_flags_unknown`]
+12. otherwise, `trust_score >= 80` and `residential == true` and all flags are false → `low`
 
 Restricted list (from the net.coffee frontend on 2026-11-09, where the browser
 forces the score to 0): CN, HK, MO, RU, KP, IR, SY, CU, BY, VE. Recorded with its

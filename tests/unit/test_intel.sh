@@ -128,6 +128,8 @@ assert_contains "$human" "AS64500 EXAMPLE-AS - Example Hosting GmbH, prefix 203.
 assert_contains "$human" "DE (3 sources agree)" "human geo consensus"
 assert_contains "$human" "skipped: set ABUSEIPDB_API_KEY to enable" "human abuseipdb hint"
 assert_eq '"pass"' "$(tf intel_netcoffee status)" "netcoffee pass"
+"$PY" -I -c 'import json,sys; d=json.load(open(sys.argv[1])); d["ip_intelligence"].pop("claude_risk"); [x.pop(k,None) for x in d["ip_intelligence"]["sources"] for k in ("trust_score","residential","vpn","proxy","tor","crawler","abuser")]; json.dump(d,open(sys.argv[2],"w"))' "$R" "$WORK/old-report.json"
+assert_true "old schema_version 0.1 report remains valid" "$PY" -I "$REPO_ROOT/tests/tools/validate_report.py" "$WORK/old-report.json"
 assert_eq '64500' "$(sf netcoffee asn)" "netcoffee asn"
 assert_eq '"Example Hosting GmbH"' "$(sf netcoffee asn_holder)" "netcoffee holder"
 assert_eq '"DE"' "$(sf netcoffee country)" "countryCode upper-cased"
@@ -296,6 +298,30 @@ risk_fixtures 0 '{"countryCode":"de","trust_score":92}'
 run_json
 assert_eq '"medium"' "$(jf ip_intelligence.claude_risk.level)" "good score, unknown property -> medium"
 assert_eq '["residential_unknown"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "residential_unknown reason"
+
+risk_fixtures 0 '{"countryCode":"de","trust_score":92,"isResidential":true}'
+run_json
+assert_eq '"unknown"' "$(jf ip_intelligence.claude_risk.level)" "missing risk flags cannot imply low risk"
+assert_eq '["risk_flags_unknown"]' "$(jf ip_intelligence.claude_risk.reasons | tr -d ' ')" "missing flags reason"
+
+risk_fixtures 0 '{"countryCode":"de","trust_score":8.9,"isResidential":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false}'
+run_json
+assert_eq 'null' "$(sf netcoffee trust_score)" "fractional score rejected"
+assert_eq '"unknown"' "$(jf ip_intelligence.claude_risk.level)" "fractional score does not create a low-risk verdict"
+
+risk_fixtures 0 '{"countryCode":"de","trust_score":92,"isResidential":true,"is_vpn":trueish,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false}'
+run_json
+assert_eq 'null' "$(sf netcoffee vpn)" "malformed boolean rejected"
+assert_eq '"unknown"' "$(jf ip_intelligence.claude_risk.level)" "malformed flags do not imply low risk"
+
+risk_fixtures 0 '{"countryCode":"de","trust_score":92,"isResidential":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false,"asn":-64500}'
+run_json
+assert_eq 'null' "$(sf netcoffee asn)" "negative ASN rejected"
+
+risk_fixtures 0 '{"countryCode":"de","trust_score":18446744073709551616,"isResidential":true,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false}'
+run_json
+assert_eq 'null' "$(sf netcoffee trust_score)" "oversized score rejected"
+assert_eq '"unknown"' "$(jf ip_intelligence.claude_risk.level)" "oversized score does not wrap to low risk"
 
 risk_fixtures 28 ''
 run_json

@@ -566,8 +566,7 @@
       "additionalProperties": false,
       "required": [
         "sources",
-        "geo_consensus",
-        "claude_risk"
+        "geo_consensus"
       ],
       "properties": {
         "sources": {
@@ -1112,7 +1111,8 @@
               "hosting_asn",
               "residential_unknown",
               "no_data",
-              "source_unavailable"
+              "source_unavailable",
+              "risk_flags_unknown"
             ]
           }
         },
@@ -1147,7 +1147,7 @@
             "string",
             "null"
           ],
-          "description": "Removed when --redact-ip is used."
+          "description": "Redacted to a stable <ip-N> label when --redact-ip is used."
         },
         "note": {
           "type": "string",
