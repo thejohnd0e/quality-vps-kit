@@ -8,7 +8,7 @@
 # captcha is never bypassed. Nothing here proves that an account, a stream or a
 # payment works.
 
-QVK_HTTP_CATEGORIES=(ai media ru_hosted)
+QVK_HTTP_CATEGORIES=(ai social media dev web ru_hosted)
 
 # _http_classify -> sets H_STATUS H_OUTCOME H_CODE H_REASON for the last response.
 _http_classify() {
@@ -79,17 +79,18 @@ qvk_http_run() {
         ttfb_ms "$(json_num "$(qvk_ms "$QC_TTFB" "$QC_TLS")")" \
         total_ms "$(json_num "$total_ms")")
       case $H_OUTCOME in
-        reachable) hmsg=http.ok hargs="$host${QVK_US}$QC_CODE${QVK_US}${total_ms%.*}" ;;
-        http_denied) hmsg=http.denied hargs="$host" ;;
-        rate_limited) hmsg=http.rate hargs="$host" ;;
-        *) hmsg=http.fail hargs="$host${QVK_US}${H_CODE:-$QC_CODE}" ;;
+        reachable) hmsg=http.ok hargs="$QC_CODE${QVK_US}${total_ms%.*}" ;;
+        http_denied) hmsg=http.denied hargs="" ;;
+        rate_limited) hmsg=http.rate hargs="" ;;
+        *) hmsg=http.fail hargs="${H_CODE:-$QC_CODE}" ;;
       esac
+      # group is the category for http_reachability sub-headings in the report.
       qvk_add_test id="$id" section=http_reachability method=curl_get endpoint="$url" \
         status="$H_STATUS" http_outcome="$H_OUTCOME" reason_code="$H_CODE" reason="$H_REASON" \
         samples=1 timeout_ms=$((QVK_HTTP_MAX_TIME * 1000)) duration_ms="${total_ms%.*}" \
         metrics="$metrics" details="$details" traffic_bytes="$QC_BYTES" \
         error="$([[ $H_STATUS == error ]] && printf '%s' "$QC_ERR")" \
-        hmsg="$hmsg" hargs="$hargs"
+        hmsg="$hmsg" hargs="$hargs" group="$cat"
     done < <(qvk_endpoints "$cat")
   done
 }
