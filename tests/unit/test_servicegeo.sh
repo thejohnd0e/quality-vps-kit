@@ -10,6 +10,8 @@ source "$REPO_ROOT/tests/lib/hostfix.sh"
 source "$REPO_ROOT/tests/lib/curlfix.sh"
 # shellcheck source=tests/lib/fixtures.sh
 source "$REPO_ROOT/tests/lib/fixtures.sh"
+# shellcheck source=lib/servicegeo.sh
+source "$REPO_ROOT/lib/servicegeo.sh"
 
 PY=$(find_python) || {
   echo "python 3 is required" >&2
@@ -27,6 +29,7 @@ host debian12-kvm-amd64
 
 YT_URL='https://www.youtube.com/premium?hl=en'
 PV_URL='https://www.primevideo.com/'
+SP_URL="https://spclient.wg.spotify.com/signup/public/v1/account/?validate=1&key=$QVK_SG_SPOTIFY_KEY"
 
 # Marker-bearing bodies, reduced from the capture recorded in the plan workspace.
 YT_AVAILABLE='<html><script>var ytcfg={"ypcOffers":[],"countryCode":"US","ypcGetOffersEndpoint":"/youtubei/v1"};</script>YouTube Premium</html>'
@@ -67,6 +70,13 @@ sg_fixtures() {
   intel_fixtures
   fix "" "$YT_URL" "${1:-0}" "${2:-200}" "${3:-$YT_AVAILABLE}" 0.025000 "${4:-}"
   fix "" "$PV_URL" 0 302 '' 0.025000 'location: /offers/nonprimehomepage'
+  fix "" "$SP_URL" 0 200 '{"country":"US","is_country_launched":true}'
+}
+
+# sp_fixtures <body>: Spotify signup answer
+sp_fixtures() {
+  sg_fixtures 0 200 "$YT_AVAILABLE"
+  fix "" "$SP_URL" 0 200 "${1:-{\"country\":\"US\",\"is_country_launched\":true}}"
 }
 
 # pv_fixtures <code> <location>: Prime Video answers with a redirect and no body
@@ -161,6 +171,31 @@ pv_fixtures 403 ''
 run_json
 assert_eq '"unknown"' "$(tf sg_prime_video status)" "403 -> unknown"
 assert_eq '"http_403"' "$(tf sg_prime_video reason_code)" "403 code"
+
+echo "# spotify: the service's own availability flag"
+sp_fixtures '{"country":"US","is_country_launched":false}'
+run_json
+assert_eq '"warn"' "$(tf sg_spotify_signup status)" "is_country_launched=false -> warn"
+assert_eq '"country_restricted"' "$(tf sg_spotify_signup details.restriction)" "false -> restricted"
+assert_eq '"availability_flag"' "$(tf sg_spotify_signup details.evidence)" "evidence is the flag"
+
+sp_fixtures '{"country":"US","is_country_launched":true}'
+run_json
+assert_eq '"pass"' "$(tf sg_spotify_signup status)" "true -> pass"
+assert_eq '"none"' "$(tf sg_spotify_signup details.restriction)" "no restriction"
+assert_eq '"US"' "$(tf sg_spotify_signup details.country)" "country from the same answer"
+
+sp_fixtures '{"status":1}'
+run_json
+assert_eq '"unknown"' "$(tf sg_spotify_signup status)" "flag missing -> unknown"
+assert_eq '"insufficient_data"' "$(tf sg_spotify_signup reason_code)" "flag missing reason"
+
+sp_fixtures '{"country":"US","is_country_launched":true}'
+run_json
+assert_not_contains "$(cat "$R")" "$QVK_SG_SPOTIFY_KEY" "json report never contains the key"
+assert_not_contains "$(tf sg_spotify_signup endpoint)" "key=" "endpoint recorded without the key"
+run_human
+assert_not_contains "$(cat "$H")" "$QVK_SG_SPOTIFY_KEY" "human report never contains the key"
 
 echo "# human output"
 sg_fixtures 0 200 "$YT_RESTRICTED"

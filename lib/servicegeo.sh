@@ -8,7 +8,10 @@
 # Nothing here follows redirects or changes a verdict.
 
 QVK_SG_UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
-QVK_SG_SERVICES=(youtube_premium prime_video)
+# Spotify's published web-client key (it ships inside spotify.com pages). Not a
+# user secret: it never reaches a report, a log or the recorded endpoint.
+QVK_SG_SPOTIFY_KEY='142b583129b2df829de3656f9eb484e6'
+QVK_SG_SERVICES=(youtube_premium prime_video spotify_signup)
 
 # _sg_country <file> [json key] -> two-letter code, upper-cased; empty when absent
 _sg_country() {
@@ -134,6 +137,38 @@ _sg_prime_video() {
       _sg_failure prime_video "$url"
       ;;
   esac
+}
+
+# Spotify signup states country availability as a boolean; the query carries a
+# published web key, so the recorded endpoint is the bare path.
+_sg_spotify_signup() {
+  local url='https://spclient.wg.spotify.com/signup/public/v1/account/' st country
+  local full="$url?validate=1&key=$QVK_SG_SPOTIFY_KEY"
+  if ((QVK_OFFLINE)); then
+    QC_TOTAL=0 QC_BYTES=0
+    _sg_emit spotify_signup skipped unknown "" none offline_mode sg_offline "" "$url"
+    return 0
+  fi
+  qvk_curl sg_spotify_signup "$full" -A "$QVK_SG_UA"
+  if ((QC_RC == 63)); then
+    _sg_emit spotify_signup unknown unknown "" none insufficient_data sg_truncated "" "$url"
+    return 0
+  fi
+  read -r st _ <<<"$(qvk_curl_outcome "$QC_RC")"
+  if [[ $st != pass || $QC_CODE != 2?? ]]; then
+    _sg_failure spotify_signup "$url"
+    return 0
+  fi
+  country=$(_sg_country "$QC_BODY" country)
+  if _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*false'; then
+    _sg_emit spotify_signup warn country_restricted "$country" availability_flag "" \
+      "$([[ -n $country ]] && echo sg.restricted || echo sg.restricted_nc)" "$country" "$url"
+  elif _sg_has "$QC_BODY" '"is_country_launched"[[:space:]]*:[[:space:]]*true'; then
+    _sg_emit spotify_signup pass none "$country" availability_flag "" \
+      "$([[ -n $country ]] && echo sg.available || echo sg.available_nc)" "$country" "$url"
+  else
+    _sg_emit spotify_signup unknown unknown "$country" none insufficient_data sg_unknown "" "$url"
+  fi
 }
 
 qvk_service_geo_run() {

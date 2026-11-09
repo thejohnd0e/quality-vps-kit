@@ -51,6 +51,7 @@ curl_calls_outside_config() {
       https://stat.ripe.net/* | https://ipinfo.io/* | https://api.abuseipdb.com/* | https://ip.net.coffee/*) continue ;;
       'https://www.youtube.com/premium?hl=en') continue ;;
       'https://www.primevideo.com/') continue ;;
+      https://spclient.wg.spotify.com/*) continue ;;
     esac
     grep -qF -- " $url" "$CONFIG" || printf '%s\n' "$line"
   done
