@@ -33,9 +33,31 @@ ai         openai_api   https://api.openai.com/v1/models
 ai         chatgpt      https://chatgpt.com/cdn-cgi/trace
 ai         anthropic    https://api.anthropic.com/v1/models
 ai         gemini       https://gemini.google.com/
+
+social     discord      https://discord.com/
+social     x            https://x.com/
+social     instagram    https://www.instagram.com/
+social     facebook     https://www.facebook.com/
+social     telegram     https://api.telegram.org/
+social     linkedin     https://www.linkedin.com/
+
 media      youtube      https://www.youtube.com/robots.txt
+media      google_video https://redirector.googlevideo.com/report_mapping?di=no
 media      netflix      https://www.netflix.com/robots.txt
 media      spotify      https://open.spotify.com/robots.txt
+media      rezka        https://rezka.ag/
+
+dev        github       https://github.com/
+dev        github_raw   https://raw.githubusercontent.com/
+dev        google_play  https://play.google.com/
+dev        digitalocean https://www.digitalocean.com/
+dev        amnezia      https://amnezia.org/
+dev        outline      https://www.getoutline.org/
+
+web        rutracker    https://rutracker.org/
+web        flibusta     https://flibusta.is/
+web        mailfence    https://www.mailfence.com/
+
 ru_hosted  yandex       https://ya.ru/robots.txt
 ru_hosted  vk           https://vk.com/robots.txt
 ru_hosted  gosuslugi    https://www.gosuslugi.ru/robots.txt

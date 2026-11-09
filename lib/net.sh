@@ -10,7 +10,7 @@ QVK_EP_ERROR=""
 QVK_EP_CAT=()
 QVK_EP_NAME=()
 QVK_EP_URL=()
-QVK_EP_CATEGORIES="echo4 echo6 baseline rtt_ru ai media ru_hosted"
+QVK_EP_CATEGORIES="echo4 echo6 baseline rtt_ru ai social media dev web ru_hosted"
 
 QVK_HTTP_CONNECT_TIMEOUT=5
 QVK_HTTP_MAX_TIME=10
