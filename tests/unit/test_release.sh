@@ -50,4 +50,16 @@ printf '\n# local edit\n' >>"$DIRTY/install.sh"
 run_check "$DIRTY"; rc=$?
 assert_eq 2 "$rc" "dirty tracked tree rejected"
 
+WORKFLOW="$REPO_ROOT/.github/workflows/release.yml"
+assert_true "release workflow exists" test -f "$WORKFLOW"
+if [[ -f $WORKFLOW ]]; then
+  tests_line=$(grep -nF 'bash tests/run.sh' "$WORKFLOW" | head -n1 | cut -d: -f1)
+  publish_line=$(grep -nF 'gh release create' "$WORKFLOW" | head -n1 | cut -d: -f1)
+  assert_true "workflow runs tests before publishing" test -n "$tests_line" -a -n "$publish_line" -a "$tests_line" -lt "$publish_line"
+  assert_contains "$(cat "$WORKFLOW")" 'tags:' "workflow triggers on a tag push"
+  assert_contains "$(cat "$WORKFLOW")" 'v*' "workflow matches version tags"
+  assert_contains "$(cat "$WORKFLOW")" 'contents: write' "workflow can publish release assets"
+  assert_contains "$(cat "$WORKFLOW")" 'gh release view' "workflow verifies the published release"
+fi
+
 finish_tests

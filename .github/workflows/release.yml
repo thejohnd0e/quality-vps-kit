@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Offline test suite
+        run: bash tests/run.sh
+        env:
+          QVK_REQUIRE_SHELLCHECK: "1"
+
+      - name: Verify release metadata
+        run: bash scripts/release.sh --check
+
+      - name: Build release assets
+        run: bash scripts/release.sh dist
+
+      - name: Publish GitHub release
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          dist/quality-vps-kit-*.tar.gz dist/SHA256SUMS
+          --title "quality-vps-kit ${GITHUB_REF_NAME#v}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Verify published release
+        run: gh release view "$GITHUB_REF_NAME" --json assets
