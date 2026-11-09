@@ -27,6 +27,13 @@ QVK_RETRY_DELAY_S=1
 QVK_RIPESTAT_URL="https://stat.ripe.net/data/prefix-overview/data.json?resource="
 QVK_IPINFO_URL="https://ipinfo.io/"
 QVK_ABUSEIPDB_URL="https://api.abuseipdb.com/api/v2/check?ipAddress="
+QVK_NETCOFFEE_URL="https://ip.net.coffee/api/iprisk/"
+
+# Last netcoffee answer, kept for the risk assessment (the shared A_* attributes
+# are reset by every source).
+QVK_NC_OK=0
+QVK_NC_ASN="" QVK_NC_HOLDER="" QVK_NC_COUNTRY="" QVK_NC_TRUST="" QVK_NC_RESID=""
+QVK_NC_VPN="" QVK_NC_PROXY="" QVK_NC_TOR="" QVK_NC_CRAWLER="" QVK_NC_ABUSER=""
 
 qvk_geo_add() {
   local src=$1 cc=$2
@@ -121,12 +128,20 @@ _intel_source_json() {
     hosting "$(json_bool "${A_HOSTING:-}")" \
     abuse_confidence_pct "$(json_num "${A_ABUSE_PCT:-}")" \
     abuse_reports "$(json_num "${A_ABUSE_REPORTS:-}")" \
-    usage_type "$(json_str_or_null "${A_USAGE:-}")"
+    usage_type "$(json_str_or_null "${A_USAGE:-}")" \
+    trust_score "$(json_num "${A_TRUST:-}")" \
+    residential "$(json_bool "${A_RESID:-}")" \
+    vpn "$(json_bool "${A_VPN:-}")" \
+    proxy "$(json_bool "${A_PROXY:-}")" \
+    tor "$(json_bool "${A_TOR:-}")" \
+    crawler "$(json_bool "${A_CRAWLER:-}")" \
+    abuser "$(json_bool "${A_ABUSER:-}")"
 }
 
 _intel_reset_attrs() {
   A_ASN="" A_HOLDER="" A_PREFIX="" A_ANNOUNCED="" A_COUNTRY="" A_HOSTNAME=""
   A_HOSTING="" A_ABUSE_PCT="" A_ABUSE_REPORTS="" A_USAGE=""
+  A_TRUST="" A_RESID="" A_VPN="" A_PROXY="" A_TOR="" A_CRAWLER="" A_ABUSER=""
 }
 
 # Secret header file; echoes its path. The caller removes it.
@@ -266,11 +281,56 @@ _intel_abuseipdb() {
     "" intel.abuse_ok "$pct${QVK_US}${reports:-0}"
 }
 
+# net.coffee: one provider's risk view of this IP (undocumented public JSON API).
+# Failure only degrades the report: the source is recorded and the run continues.
+_intel_netcoffee() {
+  local ip=$1 cc trust resid asn holder
+  _intel_reset_attrs
+  QVK_NC_OK=0
+  QVK_NC_ASN="" QVK_NC_HOLDER="" QVK_NC_COUNTRY="" QVK_NC_TRUST="" QVK_NC_RESID=""
+  QVK_NC_VPN="" QVK_NC_PROXY="" QVK_NC_TOR="" QVK_NC_CRAWLER="" QVK_NC_ABUSER=""
+  _intel_request intel_netcoffee "$QVK_NETCOFFEE_URL$ip"
+  _intel_classify
+  if [[ -n $I_STATUS ]]; then
+    _intel_emit netcoffee netcoffee_iprisk "${QVK_NETCOFFEE_URL}<ip>" "$I_STATUS" "$I_CODE" \
+      "$(_intel_reason)" intel.fail "$I_CODE"
+    return 0
+  fi
+  cc=$(_jstr "$QC_BODY" countryCode)
+  cc=${cc^^}
+  [[ $cc =~ ^[A-Z]{2}$ ]] || cc=""
+  trust=$(_jnum "$QC_BODY" trust_score)
+  if [[ $trust =~ ^[0-9]+$ ]] && ((trust <= 100)); then :; else trust=""; fi
+  asn=$(_jnum "$QC_BODY" asn)
+  holder=$(_jstr "$QC_BODY" asOrganization)
+  resid=$(_jbool "$QC_BODY" isResidential)
+  A_VPN=$(_jbool "$QC_BODY" is_vpn)
+  A_PROXY=$(_jbool "$QC_BODY" is_proxy)
+  A_TOR=$(_jbool "$QC_BODY" is_tor)
+  A_CRAWLER=$(_jbool "$QC_BODY" is_crawler)
+  A_ABUSER=$(_jbool "$QC_BODY" is_abuser)
+  if [[ -z $cc && -z $trust && -z $A_VPN && -z $A_PROXY && -z $A_TOR && -z $A_CRAWLER && -z $A_ABUSER ]]; then
+    I_CODE=invalid_answer
+    _intel_emit netcoffee netcoffee_iprisk "${QVK_NETCOFFEE_URL}<ip>" unknown "$I_CODE" \
+      "$(_intel_reason)" intel.fail "$I_CODE"
+    return 0
+  fi
+  A_ASN=$asn A_HOLDER=$holder A_COUNTRY=$cc A_TRUST=$trust A_RESID=$resid
+  [[ $resid == false ]] && A_HOSTING=true
+  QVK_NC_OK=1
+  QVK_NC_ASN=$asn QVK_NC_HOLDER=$holder QVK_NC_COUNTRY=$cc QVK_NC_TRUST=$trust
+  QVK_NC_RESID=$resid QVK_NC_VPN=$A_VPN QVK_NC_PROXY=$A_PROXY QVK_NC_TOR=$A_TOR
+  QVK_NC_CRAWLER=$A_CRAWLER QVK_NC_ABUSER=$A_ABUSER
+  _intel_emit netcoffee netcoffee_iprisk "${QVK_NETCOFFEE_URL}<ip>" pass "" "" \
+    intel.netcoffee_ok "${trust:-?}${QVK_US}${cc:-?}"
+}
+
 _intel_skip_all() {
   local code=$1 reason=$2 hmsg=$3 s
   _INTEL_MS=0 _INTEL_BYTES=0
   _intel_reset_attrs
-  for s in ripestat:ripestat_prefix_overview ipinfo:ipinfo_json abuseipdb:abuseipdb_check; do
+  for s in ripestat:ripestat_prefix_overview ipinfo:ipinfo_json abuseipdb:abuseipdb_check \
+    netcoffee:netcoffee_iprisk; do
     _intel_emit "${s%%:*}" "${s#*:}" "" skipped "$code" "$reason" "$hmsg" ""
   done
 }
@@ -318,4 +378,5 @@ qvk_intel_run() {
   _intel_ripestat "$QVK_TARGET_IP"
   _intel_ipinfo "$QVK_TARGET_IP"
   _intel_abuseipdb "$QVK_TARGET_IP"
+  _intel_netcoffee "$QVK_TARGET_IP"
 }

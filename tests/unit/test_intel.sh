@@ -30,12 +30,15 @@ RIPE_UNANNOUNCED='{"status":"ok","data":{"announced":false,"asns":[],"resource":
 INFO_OK=$'{\n  "ip": "203.0.113.10",\n  "hostname": "203-0-113-10.static.example.net",\n  "city": "Frankfurt",\n  "region": "Hesse",\n  "country": "DE",\n  "loc": "50.1,8.6",\n  "org": "AS64500 Example Hosting GmbH",\n  "timezone": "Europe/Berlin"\n}'
 INFO_HOSTING=$'{\n  "ip": "203.0.113.10",\n  "country": "DE",\n  "org": "AS64500 Example Hosting GmbH",\n  "hosting": true\n}'
 ABUSE_OK='{"data":{"ipAddress":"203.0.113.10","isPublic":true,"abuseConfidenceScore":12,"countryCode":"DE","usageType":"Data Center/Web Hosting/Transit","isp":"Example Hosting","totalReports":3}}'
+NC_URL="https://ip.net.coffee/api/iprisk/$IP"
+NC_OK='{"ip":"203.0.113.10","cidr":"203.0.113.0/24","is_bogon":false,"is_datacenter":true,"isResidential":false,"is_vpn":false,"is_proxy":false,"is_tor":false,"is_crawler":false,"is_abuser":false,"asn":64500,"asOrganization":"Example Hosting GmbH","country":"Germany","countryCode":"de","trust_score":41,"rdns":"203-0-113-10.example.net"}'
 
-# intel_base [ripe_rc ripe_code ripe_body info_rc info_code info_body]
+# intel_base [ripe_rc ripe_code ripe_body info_rc info_code info_body nc_rc nc_code nc_body]
 intel_fixtures() {
   fix "" "$RIPE_URL" "${1:-0}" "${2:-200}" "${3:-$RIPE_OK}"
   fix "" "$INFO_URL" "${4:-0}" "${5:-200}" "${6:-$INFO_OK}"
   fix "" "$ABUSE_URL" 0 200 "$ABUSE_OK"
+  fix "" "$NC_URL" "${7:-0}" "${8:-200}" "${9:-$NC_OK}"
 }
 
 # services_fixtures: gentle HTTP checks of the default endpoint list
@@ -112,6 +115,15 @@ assert_contains "$human" "IP intelligence" "human intel section"
 assert_contains "$human" "AS64500 EXAMPLE-AS - Example Hosting GmbH, prefix 203.0.113.0/24" "human ripestat line"
 assert_contains "$human" "DE (3 sources agree)" "human geo consensus"
 assert_contains "$human" "skipped: set ABUSEIPDB_API_KEY to enable" "human abuseipdb hint"
+assert_eq '"pass"' "$(tf intel_netcoffee status)" "netcoffee pass"
+assert_eq '64500' "$(sf netcoffee asn)" "netcoffee asn"
+assert_eq '"Example Hosting GmbH"' "$(sf netcoffee asn_holder)" "netcoffee holder"
+assert_eq '"DE"' "$(sf netcoffee country)" "countryCode upper-cased"
+assert_eq '41' "$(sf netcoffee trust_score)" "trust score parsed"
+assert_eq 'false' "$(sf netcoffee residential)" "residential parsed"
+assert_eq 'true' "$(sf netcoffee hosting)" "isResidential=false reported as hosting"
+assert_eq 'null' "$(sf ripestat trust_score)" "other sources keep null"
+assert_not_contains "$(cat "$R")" "203-0-113-10.example.net" "rdns is never copied"
 
 echo "# HTTP reachability classification"
 fix "" https://vk.com/robots.txt 0 403 'forbidden'
@@ -205,6 +217,24 @@ assert_true "schema" validate
 assert_eq '"unknown"' "$(tf intel_ripestat status)" "garbage -> unknown"
 assert_eq '"invalid_answer"' "$(tf intel_ripestat reason_code)" "reason invalid_answer"
 assert_eq '"invalid_answer"' "$(tf intel_ipinfo reason_code)" "ipinfo invalid_answer"
+
+echo "# netcoffee failure modes"
+scenario 0 0 0
+services_fixtures
+intel_fixtures 0 200 "$RIPE_OK" 0 200 "$INFO_OK" 28 000 ''
+run_json
+assert_true "schema" validate
+assert_eq '"fail"' "$(tf intel_netcoffee status)" "timeout -> fail"
+assert_eq '"timeout"' "$(tf intel_netcoffee reason_code)" "reason timeout"
+assert_eq '2' "$(count_calls "$NC_URL")" "transient failure retried exactly once"
+intel_fixtures 0 200 "$RIPE_OK" 0 200 "$INFO_OK" 0 200 '<html>maintenance</html>'
+run_json
+assert_eq '"unknown"' "$(tf intel_netcoffee status)" "garbage -> unknown"
+assert_eq '"invalid_answer"' "$(tf intel_netcoffee reason_code)" "reason invalid_answer"
+intel_fixtures 0 200 "$RIPE_OK" 0 200 "$INFO_OK" 0 403 'denied'
+run_json
+assert_eq '"http_403"' "$(tf intel_netcoffee reason_code)" "403 -> http_403"
+assert_eq '1' "$(count_calls "$NC_URL")" "403 is not retried"
 
 intel_fixtures 0 200 "$RIPE_UNANNOUNCED"
 run_json
