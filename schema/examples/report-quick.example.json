@@ -131,19 +131,33 @@
         "source": "ripestat", "test_id": "intel_ripestat", "status": "pass", "reason_code": null,
         "queried_at": "2026-11-08T12:00:14Z", "asn": 64500, "asn_holder": "EXAMPLE-AS - Example Hosting GmbH",
         "prefix": "203.0.113.0/24", "announced": true, "country": null, "hostname": null, "hosting": null,
-        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null,
+        "trust_score": null, "residential": null, "vpn": null, "proxy": null, "tor": null,
+        "crawler": null, "abuser": null
       },
       {
         "source": "ipinfo", "test_id": "intel_ipinfo", "status": "pass", "reason_code": null,
         "queried_at": "2026-11-08T12:00:15Z", "asn": 64500, "asn_holder": "Example Hosting GmbH",
         "prefix": null, "announced": null, "country": "DE", "hostname": null, "hosting": null,
-        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null,
+        "trust_score": null, "residential": null, "vpn": null, "proxy": null, "tor": null,
+        "crawler": null, "abuser": null
       },
       {
         "source": "abuseipdb", "test_id": "intel_abuseipdb", "status": "skipped", "reason_code": "no_api_key",
         "queried_at": "2026-11-08T12:00:15Z", "asn": null, "asn_holder": null,
         "prefix": null, "announced": null, "country": null, "hostname": null, "hosting": null,
-        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null,
+        "trust_score": null, "residential": null, "vpn": null, "proxy": null, "tor": null,
+        "crawler": null, "abuser": null
+      },
+      {
+        "source": "netcoffee", "test_id": "intel_netcoffee", "status": "pass", "reason_code": null,
+        "queried_at": "2026-11-08T12:00:16Z", "asn": 64500, "asn_holder": "Example Hosting GmbH",
+        "prefix": null, "announced": null, "country": "DE", "hostname": null, "hosting": false,
+        "abuse_confidence_pct": null, "abuse_reports": null, "usage_type": null,
+        "trust_score": 93, "residential": true, "vpn": false, "proxy": false, "tor": false,
+        "crawler": false, "abuser": false
       }
     ],
     "geo_consensus": {
@@ -154,6 +168,16 @@
       "countries": ["DE"],
       "geo_conflict": false,
       "note": "countries as reported by the listed services; says nothing about whether a given service works"
+    },
+    "claude_risk": {
+      "level": "low",
+      "reasons": [],
+      "restricted_region": false,
+      "country": "DE",
+      "trust_score": 93,
+      "residential": true,
+      "checked_ip": "203.0.113.10",
+      "note": "judgement by one third-party service (net.coffee); what Claude itself decides is unknown"
     }
   },
   "summary": {

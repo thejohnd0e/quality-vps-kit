@@ -566,7 +566,8 @@
       "additionalProperties": false,
       "required": [
         "sources",
-        "geo_consensus"
+        "geo_consensus",
+        "claude_risk"
       ],
       "properties": {
         "sources": {
@@ -577,6 +578,9 @@
         },
         "geo_consensus": {
           "$ref": "#/$defs/geo_consensus"
+        },
+        "claude_risk": {
+          "$ref": "#/$defs/claude_risk"
         }
       }
     },
@@ -942,7 +946,8 @@
           "enum": [
             "ripestat",
             "ipinfo",
-            "abuseipdb"
+            "abuseipdb",
+            "netcoffee"
           ]
         },
         "test_id": {
@@ -1024,6 +1029,129 @@
             "string",
             "null"
           ]
+        },
+        "trust_score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "Score reported by net.coffee; one provider's judgement, not a probability."
+        },
+        "residential": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "vpn": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "proxy": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "tor": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "crawler": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "abuser": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "claude_risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "reasons",
+        "restricted_region",
+        "country",
+        "trust_score",
+        "residential",
+        "checked_ip",
+        "note"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "restricted_region",
+              "tor_exit",
+              "crawler",
+              "abuse_history",
+              "low_trust_score",
+              "moderate_trust_score",
+              "vpn_or_proxy",
+              "hosting_asn",
+              "residential_unknown",
+              "no_data",
+              "source_unavailable"
+            ]
+          }
+        },
+        "restricted_region": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z]{2}$"
+        },
+        "trust_score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "residential": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "checked_ip": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Removed when --redact-ip is used."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
