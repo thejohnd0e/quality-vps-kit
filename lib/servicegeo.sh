@@ -23,10 +23,14 @@ _sg_country() {
 }
 
 # _sg_too_big: the body reached the configured cap. curl does not always return
-# exit 63 for streamed bodies, so the size is checked here as well.
+# exit 63 for streamed bodies, so the size is checked here as well. A failed or
+# timed-out curl may not have created the body file at all; treat that as "not
+# too big" and let the normal failure path report the real outcome.
 _sg_too_big() {
-  local n
-  n=$(wc -c <"$QC_BODY" 2>/dev/null) || n=0
+  local n=0
+  if [[ -f $QC_BODY ]]; then
+    n=$(wc -c <"$QC_BODY" 2>/dev/null) || n=0
+  fi
   ((n >= QVK_MAX_BODY_BYTES))
 }
 

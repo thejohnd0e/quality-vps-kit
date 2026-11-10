@@ -14,6 +14,12 @@
 QVK_TMPDIR=""
 QVK_USER_LOCALE=""
 
+# Wait-spinner state (stderr, TTY only). Spins while a stage is running so a
+# long check never looks like a hang.
+QVK_PROGRESS_PID=""
+QVK_PROGRESS_RUNNING=0
+QVK_PROGRESS_MSG=""
+
 # Capture the user's locale (for --lang autodetection) and then force a
 # predictable environment for parsing command output.
 qvk_init_env() {
@@ -24,10 +30,49 @@ qvk_init_env() {
 
 qvk_log() { printf 'qvk: %s\n' "$*" >&2; }
 
-# Progress goes to stderr and only when stderr is a terminal.
-qvk_progress() {
+# qvk_progress_start <msg> — start a wait spinner on stderr (TTY only). Stops
+# any previously started spinner first, so only one spins at a time.
+qvk_progress_start() {
   [[ -t 2 ]] || return 0
-  printf 'qvk: %s\n' "$*" >&2
+  qvk_progress_stop
+  QVK_PROGRESS_MSG=$1
+  QVK_PROGRESS_RUNNING=1
+  local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+  (
+    local i=0
+    while [[ $QVK_PROGRESS_RUNNING == 1 ]]; do
+      i=$(( (i + 1) % ${#spin} ))
+      printf '\rqvk: [%s] %s' "${spin:$i:1}" "$QVK_PROGRESS_MSG" >&2
+      sleep 0.2
+    done
+  ) &
+  QVK_PROGRESS_PID=$!
+}
+
+# qvk_progress_stop — stop the wait spinner and leave a final completed line.
+qvk_progress_stop() {
+  if [[ $QVK_PROGRESS_RUNNING == 1 ]]; then
+    QVK_PROGRESS_RUNNING=0
+    local pid=${QVK_PROGRESS_PID:-}
+    if [[ -n $pid ]]; then
+      kill "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      QVK_PROGRESS_PID=""
+    fi
+    [[ -t 2 ]] && printf '\rqvk: %s\n' "${QVK_PROGRESS_MSG:-}" >&2
+  fi
+}
+
+# Progress: on a TTY it starts a wait spinner for the stage (the spinner keeps
+# turning until the next qvk_progress call or qvk_progress_stop), so a long
+# check never looks like a hang. Off a TTY it prints a plain line to stderr
+# for logs; JSON output on stdout is never mixed with progress.
+qvk_progress() {
+  if [[ -t 2 ]]; then
+    qvk_progress_start "$*"
+  else
+    printf 'qvk: %s\n' "$*" >&2
+  fi
 }
 
 # qvk_die <exit_code> <message...>
@@ -47,6 +92,7 @@ qvk_tmpdir() {
 }
 
 qvk_cleanup() {
+  qvk_progress_stop
   if [[ -n $QVK_TMPDIR && -d $QVK_TMPDIR ]]; then
     rm -rf -- "$QVK_TMPDIR"
   fi
