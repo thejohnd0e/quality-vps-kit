@@ -211,4 +211,22 @@ printf 'unknown x https://ok.example/\n' >"$WORK/bad3.tsv"
 "$REPO_ROOT/qvk" run --endpoints "$WORK/bad3.tsv" >/dev/null 2>&1
 assert_eq 1 "$?" "unknown category rejected"
 
+echo "# iperf server config parsing"
+source "$REPO_ROOT/lib/net.sh"
+qvk_load_iperf_servers "$REPO_ROOT/config/iperf_servers.tsv"
+assert_eq 0 "$?" "iperf server config loads successfully"
+assert_eq 12 "${#QVK_IPERF_NAME[@]}" "12 iperf servers loaded"
+assert_eq "ping.online.net" "${QVK_IPERF_HOST[0]}" "first server is ping.online.net"
+assert_eq "iperf.syd1.as53852.net" "${QVK_IPERF_HOST[11]}" "last server is iperf.syd1.as53852.net"
+
+# Test qvk_iperf_servers output
+iperf_list=$(qvk_iperf_servers)
+assert_eq 12 "$(wc -l <<<"$iperf_list")" "qvk_iperf_servers outputs 12 lines"
+assert_contains "$iperf_list" "ping.online.net" "iperf list contains ping.online.net"
+
+# Test invalid config (single word)
+printf 'bad\n' >"$WORK/bad_iperf.tsv"
+qvk_load_iperf_servers "$WORK/bad_iperf.tsv" 2>/dev/null
+assert_eq 1 "$?" "invalid iperf config rejected (single word)"
+
 finish_tests

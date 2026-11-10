@@ -41,6 +41,8 @@ source "$QVK_LIB/intel.sh"
 source "$QVK_LIB/httpcheck.sh"
 # shellcheck source=lib/servicegeo.sh
 source "$QVK_LIB/servicegeo.sh"
+# shellcheck source=lib/iperf.sh
+source "$QVK_LIB/iperf.sh"
 # shellcheck source=lib/verdict.sh
 source "$QVK_LIB/verdict.sh"
 # shellcheck source=lib/report.sh
@@ -270,6 +272,8 @@ cmd_run() {
   qvk_progress "$(msg progress.http)"
   qvk_http_run
   qvk_service_geo_run
+  qvk_progress "$(msg progress.throughput)"
+  qvk_iperf_run
   qvk_geo_consensus
   qvk_claude_risk_evaluate
   qvk_verdict_evaluate

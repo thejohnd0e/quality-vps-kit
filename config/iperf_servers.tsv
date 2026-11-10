@@ -1,0 +1,16 @@
+# iperf3 servers for throughput testing. Format: <name><TAB><host>
+# Lines starting with # and empty lines are ignored.
+# Only hostnames are used (iperf3 resolves them). Keep list curated.
+
+ping.online.net		ping.online.net
+iperf.he.net		iperf.he.net
+speedtest.clouvider.net	speedtest.clouvider.net
+iperf.worldstream.nl	iperf.worldstream.nl
+iperf.par1.as53852.net	iperf.par1.as53852.net
+iperf.ams1.as53852.net	iperf.ams1.as53852.net
+iperf.fra1.as53852.net	iperf.fra1.as53852.net
+iperf.lon1.as53852.net	iperf.lon1.as53852.net
+iperf.nyc1.as53852.net	iperf.nyc1.as53852.net
+iperf.sfo1.as53852.net	iperf.sfo1.as53852.net
+iperf.sgp1.as53852.net	iperf.sgp1.as53852.net
+iperf.syd1.as53852.net	iperf.syd1.as53852.net

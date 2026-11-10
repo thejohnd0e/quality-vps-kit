@@ -155,3 +155,21 @@ qvk_write_file() {
     qvk_die "$QVK_EXIT_ENV" "failed to write $dest"
   }
 }
+
+# qvk_pkg_mgr — detect package manager, echo name, return 0 on success, 1 if unknown.
+qvk_pkg_mgr() {
+  if command -v apt >/dev/null 2>&1; then
+    echo "apt"
+    return 0
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "dnf"
+    return 0
+  elif command -v pacman >/dev/null 2>&1; then
+    echo "pacman"
+    return 0
+  elif command -v apk >/dev/null 2>&1; then
+    echo "apk"
+    return 0
+  fi
+  return 1
+}
