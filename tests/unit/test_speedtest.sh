@@ -97,7 +97,7 @@ assert_true "missing Ookla CLI installs successfully" qvk_speedtest_ensure
 assert_contains "$(cat "$WORK/curl.args")" "packagecloud.io/ookla/speedtest-cli/gpgkey" "official Ookla signing key is fetched"
 assert_contains "$(cat "$WORK/etc/apt/sources.list.d/ookla.list")" "https://packagecloud.io/ookla/speedtest-cli/debian bookworm main" "official signed Debian source is configured"
 assert_contains "$(cat "$WORK/etc/apt/sources.list.d/ookla.list")" "[signed-by=$WORK/etc/apt/keyrings/ookla.gpg]" "APT source is restricted to Ookla's signing key"
-assert_contains "$(cat "$WORK/apt.args")" "install -y speedtest" "Ookla package is installed through apt"
+assert_contains "$(cat "$WORK/apt.args")" "install -y --no-install-recommends speedtest" "Ookla package is installed through apt"
 
 # A colliding source file is rejected before keyring/source mutation.
 mv "$WORK/bin/speedtest" "$WORK/bin/speedtest.installed"

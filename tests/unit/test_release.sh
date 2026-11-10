@@ -43,21 +43,8 @@ printf '# newer commit\n' >"$AHEAD/extra"
 run_check "$AHEAD"; rc=$?
 assert_eq 2 "$rc" "tag pointing behind HEAD rejected"
 
-DRIFT="$T/install-drift"
-setup_repo "$DRIFT"
-sed -i 's/QVK_VERSION:-[0-9.]*/QVK_VERSION:-9.9.9/' "$DRIFT/install.sh"
-commit_and_retag "$DRIFT"
-output=$(cd "$DRIFT" && bash ./scripts/release.sh --check 2>&1); rc=$?
-assert_eq 2 "$rc" "install.sh version drift rejected"
-assert_contains "$output" 'install.sh default' "install pin check reached for a clean matching tag"
-
-PREFIX="$T/install-prefix"
-setup_repo "$PREFIX"
-sed -i 's/QVK_VERSION:-[0-9.]*/QVK_VERSION:-0.1.10/' "$PREFIX/install.sh"
-commit_and_retag "$PREFIX"
-output=$(cd "$PREFIX" && bash ./scripts/release.sh --check 2>&1); rc=$?
-assert_eq 2 "$rc" "install.sh version prefix does not count as a match"
-assert_contains "$output" 'install.sh default' "prefix pin does not satisfy exact version"
+# install.sh no longer pins a version (it downloads the master branch), so
+# install.sh version drift checks are no longer applicable.
 
 BADVER="$T/malformed-version"
 setup_repo "$BADVER"

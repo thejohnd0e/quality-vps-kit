@@ -35,10 +35,6 @@ git rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1 || _release_error "gi
 tag_commit=$(git rev-parse "$tag^{commit}")
 head_commit=$(git rev-parse HEAD)
 [[ $tag_commit == "$head_commit" ]] || _release_error "tag $tag does not point to HEAD"
-pin_line="version=\${QVK_VERSION:-$version}"
-pin_count=$(grep -Fxc -- "$pin_line" install.sh || true)
-assignment_count=$(grep -c '^version=' install.sh || true)
-[[ $pin_count == 1 && $assignment_count == 1 ]] || _release_error "install.sh default does not match VERSION $version"
 
 echo "release.sh: checks passed: $tag"
 ((check_only)) && exit 0
