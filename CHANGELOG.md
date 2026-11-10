@@ -4,6 +4,12 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-11-10
+
+### Fixed
+
+- Preserve a successful download measurement when a public iperf server refuses the upload direction; report upload as unavailable rather than failing the entire server result.
+
 ## [0.1.9] - 2026-11-10
 
 ### Fixed

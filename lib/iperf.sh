@@ -166,9 +166,16 @@ qvk_iperf_run_server() {
   else
     err_msg=$(_iperf_failure_reason "$upload_json" "$err_file" "$upload_rc")
     read -r status reason_code <<<"$(_iperf_failure_outcome "$err_msg" "$upload_rc")"
+    if [[ $status == error ]]; then
+      status=warn
+      reason_code=upload_unavailable
+    fi
+    local details
+    details=$(json_obj download_mbps "$(json_num "$download_mbps")" \
+      upload_mbps null latency_ms "$(json_num "$latency_ms")")
     qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="${host}:${port}" \
-      status="$status" reason_code="$reason_code" reason="upload: $err_msg" \
-      hmsg=throughput.error hargs="${host}:${port}${QVK_US}upload: ${err_msg}" \
+      status="$status" reason_code="$reason_code" reason="upload: $err_msg" details="$details" \
+      hmsg=throughput.partial hargs="${host}${QVK_US}${download_mbps}${QVK_US}${err_msg}" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
     rm -f "$err_file"
     return 0

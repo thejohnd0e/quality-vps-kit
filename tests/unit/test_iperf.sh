@@ -2,6 +2,8 @@
 set -uo pipefail
 # shellcheck source=tests/lib/assert.sh
 source "$(dirname -- "${BASH_SOURCE[0]}")/../lib/assert.sh"
+# shellcheck source=lib/json.sh
+source "$REPO_ROOT/lib/json.sh"
 # shellcheck source=lib/iperf.sh
 source "$REPO_ROOT/lib/iperf.sh"
 
@@ -81,8 +83,14 @@ for field in "${QVK_CAPTURED_TEST[@]}"; do
   [[ $field == reason=* ]] && iperf_reason=${field#reason=}
   [[ $field == status=* ]] && iperf_status=${field#status=}
 done
-assert_eq "error" "$iperf_status" "upload failure is not reported as a successful test"
 assert_contains "$iperf_reason" "upload: unable to connect to server: upload rejected" "upload failure includes JSON diagnostic"
+assert_eq "warn" "$iperf_status" "upload-only failure preserves successful download as a warning"
+iperf_details=""
+for field in "${QVK_CAPTURED_TEST[@]}"; do
+  [[ $field == details=* ]] && iperf_details=${field#details=}
+done
+assert_contains "$iperf_details" '"download_mbps":5' "partial result preserves download rate"
+assert_contains "$iperf_details" '"upload_mbps":null' "partial result marks upload rate unknown"
 assert_eq "iperf3 timed out (rc=124)" "$(_iperf_failure_reason '' /dev/null 124)" "timeout exit code is explained"
 
 cat >"$WORK/bin/iperf3" <<'STUB'

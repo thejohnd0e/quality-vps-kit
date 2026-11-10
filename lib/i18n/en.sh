@@ -316,6 +316,7 @@ unsupported platform, 3 internal error, 130 interrupted.'
   [throughput.install_failed]='Failed to install iperf3 automatically'
   [throughput.offline]='skipped: offline mode'
   [throughput.error]='%s: %s'
+  [throughput.partial]='%s: download %s Mbps; upload unavailable (%s)'
   [throughput.row]='%s  %s  %s  %s'
   [progress.throughput]='running iperf3 throughput test...'
 )
