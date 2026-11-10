@@ -271,12 +271,14 @@ cmd_run() {
   qvk_intel_run
   qvk_progress "$(msg progress.http)"
   qvk_http_run
+  qvk_progress "$(msg progress.service_geo)"
   qvk_service_geo_run
   qvk_progress "$(msg progress.throughput)"
   qvk_iperf_run
   qvk_geo_consensus
   qvk_claude_risk_evaluate
   qvk_verdict_evaluate
+  qvk_progress_stop
 
   QVK_FINISHED_AT=$(qvk_now_utc)
 
