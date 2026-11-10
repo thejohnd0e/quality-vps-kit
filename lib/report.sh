@@ -10,6 +10,7 @@ QVK_FINISHED_AT=""
 QVK_PROFILE="quick"
 QVK_OFFLINE=0
 QVK_REDACT=0
+QVK_LOAD_TEST_ENABLED=0
 
 # Render a stored message "<key><US><arg>..." with msg (human) or msg_en (JSON).
 _qvk_render() {
@@ -100,7 +101,7 @@ _qvk_report_json_raw() {
     started_at "$(json_str "$QVK_STARTED_AT")" \
     finished_at "$(json_str "$QVK_FINISHED_AT")" \
     profile "$(json_str "$QVK_PROFILE")" \
-    load_test_enabled false \
+    load_test_enabled "$(json_bool "$QVK_LOAD_TEST_ENABLED")" \
     offline "$(json_bool "$QVK_OFFLINE")" \
     redacted "$(json_bool "$QVK_REDACT")")
   env=$(json_obj \
@@ -368,7 +369,7 @@ _qvk_report_human_raw() {
   _qvk_human_claude_risk
   _qvk_human_tests http_reachability report.section.http
   _qvk_human_tests service_geo report.section.service_geo
-  _qvk_human_tests iperf_throughput report.section.throughput
+  _qvk_human_tests speedtest report.section.throughput
   printf '\n%s\n' "$(qvk_paint bold "$(msg report.verdicts)")"
   _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" QVK_SELF_REASONS QVK_SELF_MISSING
   _qvk_human_verdict client_reachability "$QVK_CLIENT_VERDICT" QVK_CLIENT_REASONS QVK_CLIENT_MISSING

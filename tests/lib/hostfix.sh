@@ -4,7 +4,7 @@
 
 # Commands qvk may call while collecting inventory. Each gets the generic stub,
 # so real tools on the developer's machine are never executed.
-HOSTFIX_COMMANDS=(ip df ss systemd-detect-virt timedatectl nft iptables ufw firewall-cmd curl nproc tracepath ping dig)
+HOSTFIX_COMMANDS=(ip df ss systemd-detect-virt timedatectl nft iptables ufw firewall-cmd curl nproc tracepath ping dig speedtest)
 
 # Read-only command lines qvk is allowed to run (extended regexes over "cmd args").
 HOSTFIX_ALLOWED=(
@@ -40,6 +40,18 @@ use_host_fixture() {
     cp "$REPO_ROOT/tests/fixtures/stub-cmd.sh" "$WORK/hostbin/$t"
     chmod +x "$WORK/hostbin/$t"
   done
+  # A fake Ookla CLI keeps ordinary qvk runs deterministic and offline.
+  cat >"$WORK/hostbin/speedtest" <<'SPEEDTEST_STUB'
+#!/bin/sh
+if [ "${1:-}" = --version ]; then
+  echo 'Speedtest by Ookla 1.2.0'
+  exit 0
+fi
+cat <<'JSON'
+{"ping":{"latency":12.5},"download":{"bandwidth":1000000,"bytes":1000000},"upload":{"bandwidth":500000,"bytes":500000}}
+JSON
+SPEEDTEST_STUB
+  chmod +x "$WORK/hostbin/speedtest"
   # Keep the original PATH for real coreutils/awk/sed/grep, stubs first.
   export PATH="$WORK/hostbin:${HOSTFIX_ORIG_PATH:=$PATH}"
   export QVK_STUB_DIR="$dir/cmd"

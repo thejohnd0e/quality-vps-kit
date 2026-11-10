@@ -17,14 +17,13 @@ Commands:
   help          Show this help
 
 Options for run:
-  --profile quick|full    Check profile (default: quick). In v0.1 "full" adds no load tests
+  --profile quick|full    Check profile (default: quick); both profiles include one Ookla speed test
   --format human|json     Output format (default: human, or json when --output is given)
   --output FILE           Write the report to FILE (mode 0600) instead of stdout
-  --offline               Do not contact any external internet resource
+  --offline               Skip all external probes, including Ookla; do not install anything
   --redact-ip             Replace IP addresses in the report with stable labels
   --endpoints FILE        Endpoint list (default: config/endpoints.tsv)
-  --allow-load            Load tests: not implemented in v0.1
-  --max-traffic-mb N      Traffic limit for load tests: not implemented in v0.1
+  --max-traffic-mb N      Traffic-capped tests: not implemented
 
 Common options:
   --lang en|ru            Language of human-readable output (JSON is always English)
@@ -37,7 +36,7 @@ unsupported platform, 3 internal error, 130 interrupted.'
   [err.unknown_option]='unknown option for "%s": %s'
   [err.missing_value]='option %s requires a value'
   [err.bad_value]='invalid value for %s: %s (expected: %s)'
-  [err.load_not_implemented]='load tests are not implemented in v0.1 (--allow-load / --max-traffic-mb); planned for v0.2'
+  [err.max_traffic_not_implemented]='--max-traffic-mb is not supported; Ookla Speedtest cannot enforce a traffic cap'
   [err.not_root]='"qvk run" must be run as root (log in with "ssh root@<vps>"); current uid: %s'
   [err.unsupported_platform]='unsupported platform: %s (supported: Debian 12/13, Ubuntu 22.04/24.04 on amd64/arm64)'
   [err.bash_too_old]='bash %s is too old; bash >= 4.4 is required'
@@ -73,7 +72,7 @@ unsupported platform, 3 internal error, 130 interrupted.'
   [opt.ping]='ICMP RTT'
   [opt.tracepath]='path MTU and route (profile full)'
   [opt.mtr]='route loss statistics'
-  [opt.iperf3]='throughput tests (v0.2)'
+  [opt.speedtest]='Ookla Speedtest CLI (installed from the official repository if missing)'
   [opt.dig]='extended DNS checks'
   [opt.ss]='listening ports'
   [opt.chronyc]='clock synchronization status'
@@ -202,7 +201,7 @@ unsupported platform, 3 internal error, 130 interrupted.'
   [err.endpoints]='%s'
   [progress.intel]='querying IP intelligence sources (they receive this VPS public IP)...'
   [progress.http]='checking HTTP reachability of services...'
-  [progress.throughput]='running iperf3 throughput test...'
+  [progress.throughput]='installing/running Ookla Speedtest...'
   [report.section.intel]='IP intelligence'
   [report.section.http]='HTTP reachability of services (from this VPS)'
   [report.section.service_geo]='Service restrictions (from this VPS)'
@@ -309,14 +308,10 @@ unsupported platform, 3 internal error, 130 interrupted.'
   [diag.icmp_none]='%s: no ICMP reply (often filtered; says nothing about TCP/UDP)'
   [diag.dns_same]='%s resolvers resolved the same %s names (presence only)'
   [diag.dns_mismatch]='system resolver gave no answer for %s of %s names that public resolvers resolved'
-  [report.section.throughput]='Network throughput (iperf3)'
-  [throughput.missing]='iperf3 not found and could not be installed automatically'
-  [throughput.header]='  Server                     Download (Mbps)  Upload (Mbps)   Latency (ms)'
-  [throughput.installing]='Installing iperf3...'
-  [throughput.install_failed]='Failed to install iperf3 automatically'
+  [report.section.throughput]='Network throughput (Speedtest by Ookla)'
+  [throughput.installing]='Installing official Ookla Speedtest CLI...'
   [throughput.offline]='skipped: offline mode'
-  [throughput.error]='%s: %s'
-  [throughput.partial]='%s: download %s Mbps; upload unavailable (%s)'
-  [throughput.row]='%s  %s  %s  %s'
-  [progress.throughput]='running iperf3 throughput test...'
+  [throughput.error]='%s'
+  [throughput.row]='Download: %s Mbps; upload: %s Mbps; latency: %s ms (Ookla Speedtest)'
+  [progress.throughput]='installing/running Ookla Speedtest...'
 )

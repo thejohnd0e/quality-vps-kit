@@ -4,6 +4,11 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+### Changed
+
+- Replace the flaky public iperf3 server matrix with one Speedtest by Ookla measurement. Every normal run now installs the official Ookla CLI from its APT repository when missing, then runs the test; `--offline` skips both.
+- Keep `--max-traffic-mb` unsupported because Ookla cannot enforce a traffic cap.
+
 ## [0.1.10] - 2026-11-10
 
 ### Fixed

@@ -23,6 +23,16 @@ for t in ip curl; do
   printf '#!/bin/sh\n[ "$1" = "--version" ] && echo "%s 0.0.0-stub" && exit 0\necho "stub %s must not run" >&2\nexit 99\n' "$t" "$t" >"$WORK/bin/$t"
   chmod +x "$WORK/bin/$t"
 done
+cat >"$WORK/bin/speedtest" <<'STUB'
+#!/bin/sh
+if [ "$1" = "--version" ]; then echo 'Speedtest by Ookla 1.2.0'; exit 0; fi
+echo "$*" >>"$SPEEDTEST_TEST_CALLS"
+cat <<'JSON'
+{"ping":{"latency":12.5},"download":{"bandwidth":1000000},"upload":{"bandwidth":500000}}
+JSON
+STUB
+chmod +x "$WORK/bin/speedtest"
+export SPEEDTEST_TEST_CALLS="$WORK/speedtest.calls"
 export PATH="$WORK/bin:$PATH"
 unset NO_COLOR LANG LC_ALL LC_MESSAGES
 # CLI tests run inventory against the real (developer/CI) host, read-only;
@@ -82,13 +92,15 @@ run_qvk as_root_debian run --output
 assert_eq 1 "$CODE" "--output without value"
 run_qvk as_root_debian run --output=
 assert_eq 1 "$CODE" "--output= empty value"
-run_qvk as_root_debian run --allow-load
-assert_eq 1 "$CODE" "--allow-load is not implemented in v0.1"
-assert_contains "$ERR" "not implemented in v0.1" "--allow-load explains why"
+run_qvk as_root_debian run
+assert_eq 0 "$CODE" "ordinary run includes the Ookla speed test"
+assert_contains "$OUT" "Ookla Speedtest" "ordinary run reports Speedtest by Ookla"
+assert_eq 1 "$(wc -l <"$SPEEDTEST_TEST_CALLS" | tr -d ' ')" "ordinary run invokes speedtest exactly once"
 run_qvk as_root_debian run --max-traffic-mb 250
-assert_eq 1 "$CODE" "--max-traffic-mb is not implemented in v0.1"
-QVK_TEST_EUID=1000 run_qvk - run --allow-load
-assert_eq 1 "$CODE" "usage errors win over the root check"
+assert_eq 1 "$CODE" "--max-traffic-mb is not implemented"
+assert_contains "$ERR" "--max-traffic-mb is not supported" "unsupported traffic cap is explicit"
+QVK_TEST_EUID=1000 run_qvk - run --max-traffic-mb 250
+assert_eq 1 "$CODE" "unsupported traffic cap is a usage error before root check"
 
 echo "# environment errors (exit 2)"
 QVK_TEST_EUID=1000 QVK_TEST_OS_RELEASE="$FIX/os-release/debian-12" run_qvk - run
@@ -115,7 +127,7 @@ assert_eq '"no_probe"' "$(json_field "$WORK/r1.json" summary.verdicts.client_rea
 assert_eq '"quick"' "$(json_field "$WORK/r1.json" run.profile)" "default profile is quick"
 assert_eq '"debian"' "$(json_field "$WORK/r1.json" system.os.id)" "os id from os-release"
 assert_eq '"amd64"' "$(json_field "$WORK/r1.json" system.arch)" "x86_64 normalized to amd64"
-assert_eq 'false' "$(json_field "$WORK/r1.json" run.load_test_enabled)" "load tests disabled"
+assert_eq 'true' "$(json_field "$WORK/r1.json" run.load_test_enabled)" "normal run includes Ookla speed test"
 
 QVK_TEST_EUID=0 QVK_TEST_OS_RELEASE="$FIX/os-release/ubuntu-24.04" QVK_TEST_ARCH=aarch64 \
   run_qvk - run --profile full --offline --redact-ip --format json
@@ -125,6 +137,15 @@ assert_true "full/offline JSON matches schema" validate "$WORK/r2.json"
 assert_eq 'true' "$(json_field "$WORK/r2.json" run.offline)" "run.offline recorded"
 assert_eq 'true' "$(json_field "$WORK/r2.json" run.redacted)" "run.redacted recorded"
 assert_eq '"arm64"' "$(json_field "$WORK/r2.json" system.arch)" "aarch64 normalized to arm64"
+assert_eq 'true' "$(json_field "$WORK/r2.json" run.load_test_enabled)" "normal full run includes Speedtest"
+
+QVK_TEST_EUID=0 QVK_TEST_OS_RELEASE="$FIX/os-release/debian-12" QVK_TEST_ARCH=x86_64 \
+  run_qvk - run --offline --format json
+assert_eq 0 "$CODE" "offline run produces a report"
+printf '%s\n' "$OUT" >"$WORK/load.json"
+assert_true "offline run JSON matches schema" validate "$WORK/load.json"
+assert_eq 'true' "$(json_field "$WORK/load.json" run.load_test_enabled)" "Speedtest is enabled by default"
+assert_contains "$(json_field "$WORK/load.json" tests)" 'speedtest_ookla' "offline run marks Ookla test skipped without installing"
 
 run_qvk as_root_debian run --output "$WORK/report.json"
 assert_eq 0 "$CODE" "run --output exits 0"

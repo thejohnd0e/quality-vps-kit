@@ -20,11 +20,11 @@ Known gaps before calling v0.1 final:
 - The AbuseIPDB adapter is verified against fixtures only.
 - Default endpoint URLs in `config/endpoints.tsv` need a periodic check.
 
-## v0.2 — controller, probe, throughput, compare
+## v0.2 — controller, probe, traffic-capped throughput, compare
 
 `qvkctl` (Python 3 stdlib + OpenSSH, Windows/Linux/macOS); SSH probe and pull-mode
 `qvk-probe` + `qvkctl import`; probe metadata (access type, operator); bounded TCP/UDP
-`iperf3` with authorization and a watchdog on the target; filtering methodology
+traffic-capped measurements with authorization and a watchdog on the target; filtering methodology
 (`bytes_before_stall`, mandatory control pair, SNI comparison); user criteria file;
 `qvkctl compare`.
 

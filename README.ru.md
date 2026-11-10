@@ -81,7 +81,7 @@ curl -fsSL https://raw.githubusercontent.com/thejohnd0e/quality-vps-kit/master/i
 
 Debian 12/13 или Ubuntu 22.04/24.04, amd64 или arm64, **root**. Нужны: `bash` (≥ 4.4),
 coreutils, `curl`, `iproute2` (есть на минимальных образах). Остальное (`jq`, `ping`,
-`ss`, `mtr`, `iperf3`, `dig`, `git`, …) необязательно: без них соответствующая проверка
+`ss`, `mtr`, `speedtest`, `dig`, `git`, …) необязательно: без них соответствующая проверка
 получает `skipped`. `qvk` не устанавливает пакеты.
 
 ## Установка и запуск
@@ -97,6 +97,10 @@ cd quality-vps-kit-*/
 ```
 
 Или из checkout: `git clone <url-репозитория> && cd quality-vps-kit && ./qvk run`.
+
+Обычный `./qvk run` включает один тест Speedtest от Ookla. Если официальный CLI отсутствует,
+qvk установит его из подписанного APT-репозитория Ookla без подтверждений. Используйте
+`--offline`, чтобы пропустить тест и установку.
 
 Однострочник передаёт `install.sh` в `bash`; при желании прочитайте его заранее (он короткий). Собрать tarball:
 `scripts/release.sh`.
@@ -119,7 +123,11 @@ qvk version | qvk --help
 | `--lang en\|ru` | язык отчёта для человека; JSON всегда английский |
 | `--endpoints ФАЙЛ` | свой список endpoint (по умолчанию `config/endpoints.tsv`) |
 
-`--allow-load` и `--max-traffic-mb` предусмотрены для v0.2 и пока завершаются кодом 1.
+Speedtest от Ookla запускается один раз при каждом обычном запуске. Если официальный CLI не
+установлен, qvk установит его из APT-репозитория Ookla вместе с ключом/источником пакетов.
+Тест использует канал VPS и может расходовать оплачиваемый трафик. `--offline` не
+устанавливает CLI и не запускает тест. `--max-traffic-mb` пока не поддерживается:
+Ookla не позволяет ограничить тест точным объёмом трафика.
 
 Примеры:
 
@@ -144,7 +152,7 @@ VPS. Подробнее: [docs/security.md](docs/security.md).
 
 ## Пока не реализовано
 
-Нагрузочные тесты (`--allow-load`), отчёты traceroute/`mtr`, контроллер
+Тесты с ограничением трафика (`--max-traffic-mb`), отчёты traceroute/`mtr`, контроллер
 `qvkctl`, клиентские probe и `compare` (v0.2), реальные тесты VPN-туннелей (v0.3),
 Markdown-отчёты, пользовательский файл критериев. План: [docs/roadmap.md](docs/roadmap.md).
 

@@ -15,7 +15,7 @@ QVK_OS_VERSION_ID=""
 QVK_OS_PRETTY=""
 
 QVK_REQUIRED_TOOLS=(curl ip timeout mktemp date awk sed grep)
-QVK_OPTIONAL_TOOLS=(jq iconv ping tracepath mtr iperf3 dig ss chronyc timedatectl systemd-detect-virt git)
+QVK_OPTIONAL_TOOLS=(jq iconv ping tracepath mtr speedtest dig ss chronyc timedatectl systemd-detect-virt git)
 
 # Parse os-release as data (never `source` it).
 qvk_read_os_release() {
