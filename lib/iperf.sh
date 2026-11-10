@@ -3,7 +3,7 @@
 # Runs iperf3 against public servers, measures download/upload/latency.
 
 QVK_IPERF_TIMEOUT=30
-QVK_IPERF_DURATION=10
+QVK_IPERF_DURATION=5
 
 # qvk_pkg_mgr — detect package manager, echo name, return 0 on success, 1 if unknown.
 qvk_pkg_mgr() {
@@ -55,11 +55,57 @@ qvk_iperf_ensure() {
   return 1
 }
 
+# _iperf_parse_download <json> — extract download Mbps from iperf3 JSON.
+_iperf_parse_download() {
+  local json=$1
+  local bps
+  # iperf3 JSON: end.sum_received.bits_per_second
+  bps=$(printf '%s' "$json" | grep -o '"sum_received"[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
+  if [[ -z $bps ]]; then
+    # Fallback: try sum (without _received or _sent)
+    bps=$(printf '%s' "$json" | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | tail -1 | sed -E 's/.*:[[:space:]]*//')
+  fi
+  if [[ -n $bps ]]; then
+    awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
+  else
+    echo "0.0"
+  fi
+}
+
+# _iperf_parse_upload <json> — extract upload Mbps from iperf3 JSON.
+_iperf_parse_upload() {
+  local json=$1
+  local bps
+  bps=$(printf '%s' "$json" | grep -o '"sum_sent"[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
+  if [[ -z $bps ]]; then
+    # Fallback
+    bps=$(printf '%s' "$json" | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
+  fi
+  if [[ -n $bps ]]; then
+    awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
+  else
+    echo "0.0"
+  fi
+}
+
+# _iperf_parse_latency <json> — extract latency (rtt) in ms from iperf3 JSON.
+_iperf_parse_latency() {
+  local json=$1
+  local rtt
+  # Try streams[0].sender.rtt or streams[0].rtt
+  rtt=$(printf '%s' "$json" | grep -o '"rtt"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
+  if [[ -n $rtt ]]; then
+    awk "BEGIN {printf \"%.1f\", $rtt / 1000}"
+  else
+    echo "0.0"
+  fi
+}
+
 # qvk_iperf_run_server <host> — run iperf3 download+upload test against one server.
 # Emits test record via qvk_add_test with section=iperf_throughput.
 qvk_iperf_run_server() {
   local host=$1
-  local download_json upload_json download_mbps upload_mbps latency_ms
+  local download_json upload_json download_mbps upload_mbps latency_ms err_file
 
   if ((QVK_OFFLINE)); then
     qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
@@ -69,24 +115,32 @@ qvk_iperf_run_server() {
     return 0
   fi
 
+  err_file=$(mktemp)
+
   # Download test (reverse mode: server sends)
-  if download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -R -J 2>/dev/null); then
+  if download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -R -J 2>"$err_file"); then
     download_mbps=$(_iperf_parse_download "$download_json")
     latency_ms=$(_iperf_parse_latency "$download_json")
   else
+    local rc=$?
+    local err_msg
+    err_msg=$(head -c 200 "$err_file" 2>/dev/null | tr '\n' ' ')
     qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
-      status=error reason_code=iperf_error reason="iperf3 download failed" \
-      hmsg=throughput.error hargs="$host" \
+      status=error reason_code=iperf_error reason="${err_msg:-iperf3 download failed (rc=$rc)}" \
+      hmsg=throughput.error hargs="${host}${QVK_US}${err_msg:-iperf3 download failed (rc=$rc)}" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
+    rm -f "$err_file"
     return 0
   fi
 
   # Upload test
-  if upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -J 2>/dev/null); then
+  if upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -J 2>"$err_file"); then
     upload_mbps=$(_iperf_parse_upload "$upload_json")
   else
-    upload_mbps=0
+    upload_mbps="0.0"
   fi
+
+  rm -f "$err_file"
 
   # Emit test record
   local details
@@ -97,42 +151,6 @@ qvk_iperf_run_server() {
     status=pass reason_code="" reason="" \
     hmsg=throughput.row hargs="${host}${QVK_US}${download_mbps}${QVK_US}${upload_mbps}${QVK_US}${latency_ms}" \
     details="$details" duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
-}
-
-# _iperf_parse_download <json> — extract download Mbps from iperf3 JSON.
-_iperf_parse_download() {
-  local json=$1
-  local bps
-  bps=$(echo "$json" | grep -o '"sum_received"[^}]*' | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | cut -d: -f2)
-  if [[ -n $bps ]]; then
-    awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
-  else
-    echo "0"
-  fi
-}
-
-# _iperf_parse_upload <json> — extract upload Mbps from iperf3 JSON.
-_iperf_parse_upload() {
-  local json=$1
-  local bps
-  bps=$(echo "$json" | grep -o '"sum_sent"[^}]*' | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | cut -d: -f2)
-  if [[ -n $bps ]]; then
-    awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
-  else
-    echo "0"
-  fi
-}
-
-# _iperf_parse_latency <json> — extract latency (rtt) in ms from iperf3 JSON.
-_iperf_parse_latency() {
-  local json=$1
-  local rtt
-  rtt=$(echo "$json" | grep -o '"rtt"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | cut -d: -f2)
-  if [[ -n $rtt ]]; then
-    awk "BEGIN {printf \"%.1f\", $rtt / 1000}"
-  else
-    echo "0"
-  fi
 }
 
 # qvk_iperf_run — main entry point, runs throughput test against all configured servers.

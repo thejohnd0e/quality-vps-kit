@@ -312,6 +312,8 @@ Read-only оценка нового VPS перед использованием 
   [throughput.header]='  Сервер                     Скачивание (Мбит/с)  Отдача (Мбит/с)  Пинг (мс)'
   [throughput.installing]='Установка iperf3...'
   [throughput.install_failed]='Не удалось установить iperf3 автоматически'
+  [throughput.offline]='пропущено: офлайн-режим'
+  [throughput.error]='%s: %s'
   [throughput.row]='%s  %s  %s  %s'
   [progress.throughput]='запуск iperf3 теста скорости...'
 )
