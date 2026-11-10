@@ -93,11 +93,29 @@ _iperf_parse_latency() {
   fi
 }
 
+# _iperf_failure_reason <stdout> <stderr-file> <exit-code> — prefer the
+# iperf3 JSON error (which may be stdout even when iperf3 exits nonzero).
+_iperf_failure_reason() {
+  local output=$1 err_file=$2 rc=$3 reason
+  reason=$(printf '%s' "$output" | tr '\n' ' ' | sed -nE 's/.*"error"[[:space:]]*:[[:space:]]*"([^"\\]*)".*/\1/p' | head -1)
+  if [[ -z $reason ]]; then
+    reason=$(head -c 200 "$err_file" 2>/dev/null | tr '\r\n' '  ')
+  fi
+  if [[ -z $reason ]]; then
+    if ((rc == 124)); then
+      reason="iperf3 timed out (rc=124)"
+    else
+      reason="iperf3 failed (rc=$rc)"
+    fi
+  fi
+  printf '%s' "$reason"
+}
+
 # qvk_iperf_run_server <host> — run iperf3 download+upload test against one server.
 # Emits test record via qvk_add_test with section=iperf_throughput.
 qvk_iperf_run_server() {
   local host=$1
-  local download_json upload_json download_mbps upload_mbps latency_ms err_file
+  local download_json upload_json download_mbps upload_mbps latency_ms err_file download_rc upload_rc err_msg
 
   if ((QVK_OFFLINE)); then
     qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
@@ -110,26 +128,34 @@ qvk_iperf_run_server() {
   err_file=$(mktemp)
 
   # Download test (reverse mode: server sends)
-  if download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -R -J 2>"$err_file"); then
+  download_rc=0
+  download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -R -J 2>"$err_file") || download_rc=$?
+  if ((download_rc == 0)); then
     download_mbps=$(_iperf_parse_download "$download_json")
     latency_ms=$(_iperf_parse_latency "$download_json")
   else
-    local rc=$?
-    local err_msg
-    err_msg=$(head -c 200 "$err_file" 2>/dev/null | tr '\n' ' ')
+    err_msg=$(_iperf_failure_reason "$download_json" "$err_file" "$download_rc")
     qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
-      status=error reason_code=iperf_error reason="${err_msg:-iperf3 download failed (rc=$rc)}" \
-      hmsg=throughput.error hargs="${host}${QVK_US}${err_msg:-iperf3 download failed (rc=$rc)}" \
+      status=error reason_code=iperf_error reason="$err_msg" \
+      hmsg=throughput.error hargs="${host}${QVK_US}${err_msg}" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
     rm -f "$err_file"
     return 0
   fi
 
   # Upload test
-  if upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -J 2>"$err_file"); then
+  upload_rc=0
+  upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -J 2>"$err_file") || upload_rc=$?
+  if ((upload_rc == 0)); then
     upload_mbps=$(_iperf_parse_upload "$upload_json")
   else
-    upload_mbps="0.0"
+    err_msg=$(_iperf_failure_reason "$upload_json" "$err_file" "$upload_rc")
+    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
+      status=error reason_code=iperf_error reason="upload: $err_msg" \
+      hmsg=throughput.error hargs="${host}${QVK_US}upload: ${err_msg}" \
+      duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
+    rm -f "$err_file"
+    return 0
   fi
 
   rm -f "$err_file"

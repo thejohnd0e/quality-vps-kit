@@ -4,6 +4,14 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-11-10
+
+### Fixed
+
+- Preserve iperf3 stdout when the command exits nonzero and extract the JSON error message, instead of reporting only the exit code.
+- Report upload failures as errors rather than successful tests with a zero upload rate.
+- Explain iperf3 timeout exit code 124 in the throughput report.
+
 ## [0.1.7] - 2026-11-10
 
 ### Fixed
