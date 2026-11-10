@@ -38,13 +38,14 @@ qvk_progress_start() {
   qvk_progress_stop
   QVK_PROGRESS_MSG=$1
   QVK_PROGRESS_RUNNING=1
-  local spin='|/-\\'
-  local n=${#spin}
+  local -a spin=('|' '/' '-' $'\\')
+  local n=${#spin[@]}
+  local cr=$'\r'
   (
     local i=0
     while [[ $QVK_PROGRESS_RUNNING == 1 ]]; do
       i=$(( (i + 1) % n ))
-      printf '\rqvk: [%s] %s' "${spin:$i:1}" "$QVK_PROGRESS_MSG" >&2
+      printf '%s[%s] %s' "$cr" "${spin[$i]}" "$QVK_PROGRESS_MSG" >&2
       sleep 0.2
     done
   ) &
@@ -61,7 +62,8 @@ qvk_progress_stop() {
       wait "$pid" 2>/dev/null || true
       QVK_PROGRESS_PID=""
     fi
-    [[ -t 2 ]] && printf '\rqvk: %s\n' "${QVK_PROGRESS_MSG:-}" >&2
+    local cr=$'\r'
+    [[ -t 2 ]] && printf '%s%s\n' "$cr" "${QVK_PROGRESS_MSG:-}" >&2
   fi
 }
 
