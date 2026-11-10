@@ -32,16 +32,18 @@ qvk_log() { printf 'qvk: %s\n' "$*" >&2; }
 
 # qvk_progress_start <msg> — start a wait spinner on stderr (TTY only). Stops
 # any previously started spinner first, so only one spins at a time.
+# Uses plain ASCII so it renders in any terminal (no Braille/UTF-8 glyphs).
 qvk_progress_start() {
   [[ -t 2 ]] || return 0
   qvk_progress_stop
   QVK_PROGRESS_MSG=$1
   QVK_PROGRESS_RUNNING=1
-  local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+  local spin='|/-\\'
+  local n=${#spin}
   (
     local i=0
     while [[ $QVK_PROGRESS_RUNNING == 1 ]]; do
-      i=$(( (i + 1) % ${#spin} ))
+      i=$(( (i + 1) % n ))
       printf '\rqvk: [%s] %s' "${spin:$i:1}" "$QVK_PROGRESS_MSG" >&2
       sleep 0.2
     done
