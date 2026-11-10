@@ -4,6 +4,15 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-10
+
+### Added
+
+- Add iperf3-based network throughput test (download + upload) against public iperf3 servers (Scaleway, Hurricane Electric, Clouvider, Worldstream, AS53852 locations worldwide).
+- Auto-install iperf3 via package manager (apt/dnf/pacman/apk) if missing and running as root.
+- Table output with Server | Download (Mbps) | Upload (Mbps) | Latency (ms) columns, matching speedtest.net style.
+- Section runs under `--profile full`, auto-installs iperf3 via package manager if missing (requires root).
+
 ## [0.1.4] - 2026-11-10
 
 ### Added
