@@ -4,6 +4,13 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-11-10
+
+### Fixed
+
+- Replace stale, unresolvable iperf endpoints with currently published public servers and their required ports.
+- Skip servers that are temporarily busy (and timed-out runs) instead of marking these external conditions as tester errors.
+
 ## [0.1.8] - 2026-11-10
 
 ### Fixed

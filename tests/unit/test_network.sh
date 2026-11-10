@@ -215,18 +215,26 @@ echo "# iperf server config parsing"
 source "$REPO_ROOT/lib/net.sh"
 qvk_load_iperf_servers "$REPO_ROOT/config/iperf_servers.tsv"
 assert_eq 0 "$?" "iperf server config loads successfully"
-assert_eq 12 "${#QVK_IPERF_NAME[@]}" "12 iperf servers loaded"
+assert_eq 7 "${#QVK_IPERF_NAME[@]}" "7 iperf servers loaded"
 assert_eq "ping.online.net" "${QVK_IPERF_HOST[0]}" "first server is ping.online.net"
-assert_eq "iperf.syd1.as53852.net" "${QVK_IPERF_HOST[11]}" "last server is iperf.syd1.as53852.net"
+assert_eq "5203" "${QVK_IPERF_PORT[0]}" "first server uses its verified non-default port"
+assert_eq "iperf.he.net" "${QVK_IPERF_HOST[6]}" "last server is Hurricane Electric"
+assert_contains "$(qvk_iperf_servers)" "ping.online.net ping.online.net 5203" "iperf server entry includes selected port"
 
 # Test qvk_iperf_servers output
 iperf_list=$(qvk_iperf_servers)
-assert_eq 12 "$(wc -l <<<"$iperf_list")" "qvk_iperf_servers outputs 12 lines"
+assert_eq 7 "$(wc -l <<<"$iperf_list")" "qvk_iperf_servers outputs 7 lines"
 assert_contains "$iperf_list" "ping.online.net" "iperf list contains ping.online.net"
 
 # Test invalid config (single word)
 printf 'bad\n' >"$WORK/bad_iperf.tsv"
 qvk_load_iperf_servers "$WORK/bad_iperf.tsv" 2>/dev/null
 assert_eq 1 "$?" "invalid iperf config rejected (single word)"
+printf 'bad.example bad.example 70000\n' >"$WORK/bad_iperf_port.tsv"
+qvk_load_iperf_servers "$WORK/bad_iperf_port.tsv" 2>/dev/null
+assert_eq 1 "$?" "iperf port outside 1-65535 rejected"
+printf 'legacy.example legacy.example\n' >"$WORK/legacy_iperf.tsv"
+qvk_load_iperf_servers "$WORK/legacy_iperf.tsv"
+assert_eq "5201" "${QVK_IPERF_PORT[0]}" "legacy two-column server entry defaults to port 5201"
 
 finish_tests

@@ -1,16 +1,11 @@
-# iperf3 servers for throughput testing. Format: <name><TAB><host>
+# iperf3 servers for throughput testing. Format: <name><TAB><host><TAB><port>
 # Lines starting with # and empty lines are ignored.
-# Only hostnames are used (iperf3 resolves them). Keep list curated.
+# Server list checked against iperf.fr's public server table on 2026-11-10.
 
-ping.online.net		ping.online.net
-iperf.he.net		iperf.he.net
-speedtest.clouvider.net	speedtest.clouvider.net
-iperf.worldstream.nl	iperf.worldstream.nl
-iperf.par1.as53852.net	iperf.par1.as53852.net
-iperf.ams1.as53852.net	iperf.ams1.as53852.net
-iperf.fra1.as53852.net	iperf.fra1.as53852.net
-iperf.lon1.as53852.net	iperf.lon1.as53852.net
-iperf.nyc1.as53852.net	iperf.nyc1.as53852.net
-iperf.sfo1.as53852.net	iperf.sfo1.as53852.net
-iperf.sgp1.as53852.net	iperf.sgp1.as53852.net
-iperf.syd1.as53852.net	iperf.syd1.as53852.net
+ping.online.net	ping.online.net	5203
+iperf3.moji.fr	iperf3.moji.fr	5202
+speedtest.milkywan.fr	speedtest.milkywan.fr	9200
+paris.bbr.iperf.bytel.fr	paris.bbr.iperf.bytel.fr	9200
+speedtest2.serverius.net	speedtest2.serverius.net	5002
+speedtest3.serverius.net	speedtest3.serverius.net	5002
+iperf.he.net	iperf.he.net	5201

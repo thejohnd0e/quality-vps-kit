@@ -111,14 +111,28 @@ _iperf_failure_reason() {
   printf '%s' "$reason"
 }
 
+# _iperf_failure_outcome <reason> <exit-code> — classify shared-server
+# contention and timeouts as skipped measurements, not tester errors.
+_iperf_failure_outcome() {
+  local reason=$1 rc=$2
+  if [[ $reason == *"server is busy running a test"* ]]; then
+    printf 'skipped server_busy'
+  elif ((rc == 124)); then
+    printf 'skipped timeout'
+  else
+    printf 'error iperf_error'
+  fi
+}
+
 # qvk_iperf_run_server <host> — run iperf3 download+upload test against one server.
 # Emits test record via qvk_add_test with section=iperf_throughput.
 qvk_iperf_run_server() {
-  local host=$1
+  local host=$1 port=${2:-5201}
   local download_json upload_json download_mbps upload_mbps latency_ms err_file download_rc upload_rc err_msg
+  local status reason_code
 
   if ((QVK_OFFLINE)); then
-    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
+    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="${host}:${port}" \
       status=skipped reason_code=offline_mode reason="--offline: no external requests" \
       hmsg=throughput.offline hargs="" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
@@ -129,15 +143,16 @@ qvk_iperf_run_server() {
 
   # Download test (reverse mode: server sends)
   download_rc=0
-  download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -R -J 2>"$err_file") || download_rc=$?
+  download_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -p "$port" -t "$QVK_IPERF_DURATION" -R -J 2>"$err_file") || download_rc=$?
   if ((download_rc == 0)); then
     download_mbps=$(_iperf_parse_download "$download_json")
     latency_ms=$(_iperf_parse_latency "$download_json")
   else
     err_msg=$(_iperf_failure_reason "$download_json" "$err_file" "$download_rc")
-    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
-      status=error reason_code=iperf_error reason="$err_msg" \
-      hmsg=throughput.error hargs="${host}${QVK_US}${err_msg}" \
+    read -r status reason_code <<<"$(_iperf_failure_outcome "$err_msg" "$download_rc")"
+    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="${host}:${port}" \
+      status="$status" reason_code="$reason_code" reason="$err_msg" \
+      hmsg=throughput.error hargs="${host}:${port}${QVK_US}${err_msg}" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
     rm -f "$err_file"
     return 0
@@ -145,14 +160,15 @@ qvk_iperf_run_server() {
 
   # Upload test
   upload_rc=0
-  upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -t "$QVK_IPERF_DURATION" -J 2>"$err_file") || upload_rc=$?
+  upload_json=$(timeout "$QVK_IPERF_TIMEOUT" iperf3 -c "$host" -p "$port" -t "$QVK_IPERF_DURATION" -J 2>"$err_file") || upload_rc=$?
   if ((upload_rc == 0)); then
     upload_mbps=$(_iperf_parse_upload "$upload_json")
   else
     err_msg=$(_iperf_failure_reason "$upload_json" "$err_file" "$upload_rc")
-    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
-      status=error reason_code=iperf_error reason="upload: $err_msg" \
-      hmsg=throughput.error hargs="${host}${QVK_US}upload: ${err_msg}" \
+    read -r status reason_code <<<"$(_iperf_failure_outcome "$err_msg" "$upload_rc")"
+    qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="${host}:${port}" \
+      status="$status" reason_code="$reason_code" reason="upload: $err_msg" \
+      hmsg=throughput.error hargs="${host}:${port}${QVK_US}upload: ${err_msg}" \
       duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
     rm -f "$err_file"
     return 0
@@ -165,7 +181,7 @@ qvk_iperf_run_server() {
   details=$(json_obj download_mbps "$(json_num "$download_mbps")" \
     upload_mbps "$(json_num "$upload_mbps")" latency_ms "$(json_num "$latency_ms")")
 
-  qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="$host" \
+  qvk_add_test id="iperf_${host//./_}" section=iperf_throughput method=iperf3 endpoint="${host}:${port}" \
     status=pass reason_code="" reason="" \
     hmsg=throughput.row hargs="${host}${QVK_US}${download_mbps}${QVK_US}${upload_mbps}${QVK_US}${latency_ms}" \
     details="$details" duration_ms=0 timeout_ms=$((QVK_IPERF_TIMEOUT * 1000)) samples=1 traffic_bytes=0
@@ -179,6 +195,6 @@ qvk_iperf_run() {
   local i
   for i in "${!QVK_IPERF_HOST[@]}"; do
     qvk_progress "$(msg progress.throughput "${QVK_IPERF_NAME[i]}")"
-    qvk_iperf_run_server "${QVK_IPERF_HOST[i]}"
+    qvk_iperf_run_server "${QVK_IPERF_HOST[i]}" "${QVK_IPERF_PORT[i]}"
   done
 }

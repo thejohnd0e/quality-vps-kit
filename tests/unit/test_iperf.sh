@@ -42,22 +42,26 @@ trap 'rm -rf -- "$WORK"' EXIT
 mkdir "$WORK/bin"
 cat >"$WORK/bin/iperf3" <<'STUB'
 #!/usr/bin/env bash
+printf '%s\n' "$*" >>"$IPERF_ARGS_OUT"
 printf '%s\n' '{"error": "unable to connect to server: Connection refused"}'
 exit 1
 STUB
 chmod +x "$WORK/bin/iperf3"
+IPERF_ARGS_OUT="$WORK/args"
+export IPERF_ARGS_OUT
 PATH="$WORK/bin:$PATH"
 QVK_OFFLINE=0
 QVK_US=$'\x1f'
 QVK_IPERF_TIMEOUT=2
 QVK_CAPTURED_TEST=()
 qvk_add_test() { QVK_CAPTURED_TEST=("$@"); }
-qvk_iperf_run_server example.com
+qvk_iperf_run_server example.com 5203
 iperf_reason=""
 for field in "${QVK_CAPTURED_TEST[@]}"; do
   [[ $field == reason=* ]] && iperf_reason=${field#reason=}
 done
 assert_contains "$iperf_reason" "unable to connect to server: Connection refused" "runner extracts JSON error from stdout on rc=1"
+assert_contains "$(cat "$WORK/args")" "-p 5203" "runner uses configured server port"
 
 cat >"$WORK/bin/iperf3" <<'STUB'
 #!/usr/bin/env bash
@@ -80,6 +84,20 @@ done
 assert_eq "error" "$iperf_status" "upload failure is not reported as a successful test"
 assert_contains "$iperf_reason" "upload: unable to connect to server: upload rejected" "upload failure includes JSON diagnostic"
 assert_eq "iperf3 timed out (rc=124)" "$(_iperf_failure_reason '' /dev/null 124)" "timeout exit code is explained"
+
+cat >"$WORK/bin/iperf3" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' '{"error": "the server is busy running a test. try again later"}'
+exit 1
+STUB
+chmod +x "$WORK/bin/iperf3"
+QVK_CAPTURED_TEST=()
+qvk_iperf_run_server example.com 5203
+iperf_status=""
+for field in "${QVK_CAPTURED_TEST[@]}"; do
+  [[ $field == status=* ]] && iperf_status=${field#status=}
+done
+assert_eq "skipped" "$iperf_status" "busy public iperf server is skipped, not a tester error"
 
 # The human report must surface the command's diagnostic, not just the host.
 source "$REPO_ROOT/lib/report.sh"
