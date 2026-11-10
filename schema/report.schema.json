@@ -621,6 +621,7 @@
         "network_egress",
         "client_reachability",
         "throughput",
+        "speedtest",
         "ip_intelligence",
         "http_reachability",
         "service_geo",

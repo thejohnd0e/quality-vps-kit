@@ -72,7 +72,7 @@ The escaper is covered by round-trip tests through Python's JSON parser.
 | Code | Meaning |
 |---|---|
 | 0 | report produced, regardless of verdict (doctor: platform ready) |
-| 1 | usage error, or an option not implemented in this version (`--allow-load`) |
+| 1 | usage error, or an option not implemented in this version (`--max-traffic-mb`) |
 | 2 | not root for `run`, unsupported platform, missing required tool |
 | 3 | internal error |
 | 130 / 143 | interrupted by SIGINT / SIGTERM after cleanup |

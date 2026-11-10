@@ -16,14 +16,13 @@ Read-only оценка нового VPS перед использованием 
   help          Показать эту справку
 
 Опции run:
-  --profile quick|full    Профиль проверки (по умолчанию quick). В v0.1 "full" без нагрузочных тестов
+  --profile quick|full    Профиль проверки (по умолчанию quick); оба профиля включают тест Ookla
   --format human|json     Формат вывода (по умолчанию human, при --output — json)
   --output ФАЙЛ           Записать отчёт в ФАЙЛ (права 0600) вместо stdout
-  --offline               Не обращаться ни к каким внешним интернет-ресурсам
+  --offline               Пропустить все внешние проверки, включая Ookla; ничего не устанавливать
   --redact-ip             Заменить IP-адреса в отчёте стабильными метками
   --endpoints ФАЙЛ        Список endpoint (по умолчанию config/endpoints.tsv)
-  --allow-load            Нагрузочные тесты: не реализовано в v0.1
-  --max-traffic-mb N      Лимит трафика нагрузочных тестов: не реализовано в v0.1
+  --max-traffic-mb N      Тесты с лимитом трафика пока не реализованы
 
 Общие опции:
   --lang en|ru            Язык человекочитаемого вывода (JSON всегда на английском)
@@ -36,7 +35,7 @@ Read-only оценка нового VPS перед использованием 
   [err.unknown_option]='неизвестная опция для "%s": %s'
   [err.missing_value]='опции %s нужно значение'
   [err.bad_value]='недопустимое значение %s: %s (ожидается: %s)'
-  [err.load_not_implemented]='нагрузочные тесты не реализованы в v0.1 (--allow-load / --max-traffic-mb); запланированы на v0.2'
+  [err.max_traffic_not_implemented]='--max-traffic-mb не поддерживается: Ookla Speedtest не умеет ограничивать объём трафика'
   [err.not_root]='"qvk run" нужно запускать от root (вход "ssh root@<vps>"); текущий uid: %s'
   [err.unsupported_platform]='неподдерживаемая платформа: %s (поддерживаются Debian 12/13, Ubuntu 22.04/24.04 на amd64/arm64)'
   [err.bash_too_old]='bash %s слишком старый; нужен bash >= 4.4'
@@ -72,7 +71,7 @@ Read-only оценка нового VPS перед использованием 
   [opt.ping]='ICMP RTT'
   [opt.tracepath]='path MTU и маршрут (профиль full)'
   [opt.mtr]='статистика потерь по маршруту'
-  [opt.iperf3]='тесты пропускной способности (v0.2)'
+  [opt.speedtest]='Ookla Speedtest CLI (при отсутствии устанавливается из официального репозитория)'
   [opt.dig]='расширенные проверки DNS'
   [opt.ss]='слушающие порты'
   [opt.chronyc]='статус синхронизации часов'
@@ -200,7 +199,7 @@ Read-only оценка нового VPS перед использованием 
   [verdict.offline]='--offline: сетевые критерии не проверялись'
   [progress.intel]='запросы к источникам IP-intelligence (они получают публичный IP этого VPS)...'
   [progress.http]='проверка HTTP-доступности сервисов...'
-  [progress.throughput]='запуск iperf3 теста скорости...'
+  [progress.throughput]='установка/запуск Ookla Speedtest...'
   [report.section.intel]='IP-intelligence'
   [report.section.http]='HTTP-доступность сервисов (с этого VPS)'
   [report.section.service_geo]='Ограничения сервисов по стране (с этого VPS)'
@@ -307,14 +306,10 @@ Read-only оценка нового VPS перед использованием 
   [diag.icmp_none]='%s: нет ответа на ICMP (часто фильтруется; о TCP/UDP не говорит ничего)'
   [diag.dns_same]='резолверов: %s, одинаково разрешились имена: %s (только наличие ответа)'
   [diag.dns_mismatch]='системный резолвер не ответил для %s из %s имён, которые разрешили публичные'
-  [report.section.throughput]='Скорость канала (iperf3)'
-  [throughput.missing]='iperf3 не найден и не удалось установить автоматически'
-  [throughput.header]='  Сервер                     Скачивание (Мбит/с)  Отдача (Мбит/с)  Пинг (мс)'
-  [throughput.installing]='Установка iperf3...'
-  [throughput.install_failed]='Не удалось установить iperf3 автоматически'
+  [report.section.throughput]='Скорость сети (Speedtest от Ookla)'
+  [throughput.installing]='Установка официального Ookla Speedtest CLI...'
   [throughput.offline]='пропущено: офлайн-режим'
-  [throughput.error]='%s: %s'
-  [throughput.partial]='%s: загрузка %s Мбит/с; отдача недоступна (%s)'
-  [throughput.row]='%s  %s  %s  %s'
-  [progress.throughput]='запуск iperf3 теста скорости...'
+  [throughput.error]='%s'
+  [throughput.row]='Загрузка: %s Мбит/с; отдача: %s Мбит/с; задержка: %s мс (Ookla Speedtest)'
+  [progress.throughput]='установка/запуск Ookla Speedtest...'
 )

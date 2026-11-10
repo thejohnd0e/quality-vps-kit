@@ -55,61 +55,6 @@ qvk_endpoints() {
   return 0
 }
 
-# --- iperf3 throughput servers -------------------------------------------------------
-
-QVK_IPERF_NAME=()
-QVK_IPERF_HOST=()
-QVK_IPERF_PORT=()
-QVK_IPERF_ERROR=""
-
-# qvk_load_iperf_servers <file> — fills QVK_IPERF_NAME/HOST/PORT; on error sets QVK_IPERF_ERROR, returns 1.
-qvk_load_iperf_servers() {
-  local f=$1 line name host port lineno=0
-  QVK_IPERF_NAME=() QVK_IPERF_HOST=() QVK_IPERF_PORT=() QVK_IPERF_ERROR=""
-  if [[ ! -r $f ]]; then
-    QVK_IPERF_ERROR="cannot read iperf server list: $f"
-    return 1
-  fi
-  while IFS= read -r line || [[ -n $line ]]; do
-    lineno=$((lineno + 1))
-    line=${line%$'\r'}
-    [[ $line =~ ^[[:space:]]*(#|$) ]] && continue
-    local name="" host="" port=""
-    # Use an array to split and check exact field count
-    local -a fields=()
-    read -r -a fields <<<"$line"
-    if (( ${#fields[@]} < 2 || ${#fields[@]} > 3 )); then
-      QVK_IPERF_ERROR="$f:$lineno: invalid iperf server line (expected: <name> <host> [port])"
-      return 1
-    fi
-    name=${fields[0]}
-    host=${fields[1]}
-    port=${fields[2]:-5201}
-    # Validate host: hostname or IP (basic check)
-    if ! [[ $host =~ ^[A-Za-z0-9.-]+$ ]]; then
-      QVK_IPERF_ERROR="$f:$lineno: invalid host format: $host"
-      return 1
-    fi
-    if ! [[ $port =~ ^[0-9]{1,5}$ ]] || ((10#$port < 1 || 10#$port > 65535)); then
-      QVK_IPERF_ERROR="$f:$lineno: invalid iperf port: $port"
-      return 1
-    fi
-    QVK_IPERF_NAME+=("$name")
-    QVK_IPERF_HOST+=("$host")
-    QVK_IPERF_PORT+=("$port")
-  done <"$f"
-  return 0
-}
-
-# qvk_iperf_servers — prints "name host port" lines for iteration.
-qvk_iperf_servers() {
-  local i
-  for i in "${!QVK_IPERF_NAME[@]}"; do
-    printf '%s %s %s\n' "${QVK_IPERF_NAME[i]}" "${QVK_IPERF_HOST[i]}" "${QVK_IPERF_PORT[i]}"
-  done
-  return 0
-}
-
 qvk_url_host() {
   local h=${1#https://}
   h=${h%%/*}

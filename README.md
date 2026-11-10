@@ -82,7 +82,7 @@ Details: [docs/methodology.md](docs/methodology.md).
 
 Debian 12/13 or Ubuntu 22.04/24.04, amd64 or arm64, **root**. Needed tools: `bash`
 (≥ 4.4), coreutils, `curl`, `iproute2` (present on minimal images). Everything else
-(`jq`, `ping`, `ss`, `mtr`, `iperf3`, `dig`, `git`, …) is optional; missing tools make
+(`jq`, `ping`, `ss`, `mtr`, `speedtest`, `dig`, `git`, …) is optional; missing tools make
 the related check `skipped`. `qvk` never installs packages.
 
 ## Install and run
@@ -99,6 +99,10 @@ cd quality-vps-kit-*/
 ```
 
 Or from a checkout: `git clone <repo-url> && cd quality-vps-kit && ./qvk run`.
+
+Every normal `./qvk run` includes one Speedtest by Ookla measurement. If the official
+CLI is missing, qvk installs it from Ookla's signed APT repository without prompting.
+Use `--offline` to skip the test and any installation.
 
 The one-liner pipes `install.sh` into `bash`; read it first if you prefer (it is short). Build a tarball with `scripts/release.sh`.
 
@@ -120,7 +124,11 @@ qvk version | qvk --help
 | `--lang en\|ru` | language of the human report; JSON is always English |
 | `--endpoints FILE` | your own endpoint list (default `config/endpoints.tsv`) |
 
-`--allow-load` and `--max-traffic-mb` exist for v0.2 and currently exit with code 1.
+Speedtest by Ookla runs once on every normal invocation. If its official CLI is missing,
+qvk installs it from Ookla's APT repository and installs the `speedtest` package; this
+adds a package source/key and package to the VPS. The test uses network bandwidth and
+may incur provider traffic charges. `--offline` never installs or runs it.
+`--max-traffic-mb` remains unsupported because Ookla's test cannot enforce a byte cap.
 
 Examples:
 
@@ -174,7 +182,7 @@ See [docs/security.md](docs/security.md).
 
 ## Not implemented yet
 
-Load/throughput tests (`--allow-load`), traceroute/`mtr` reports, the
+Traffic-capped load tests (`--max-traffic-mb`), traceroute/`mtr` reports, the
 controller `qvkctl`, client-side probes and `compare` (v0.2), real VPN tunnel tests
 (v0.3), Markdown reports, a user-defined criteria file. Planned work:
 [docs/roadmap.md](docs/roadmap.md).
