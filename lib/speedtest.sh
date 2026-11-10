@@ -184,17 +184,19 @@ qvk_speedtest_ensure() {
     tmp=$(mktemp -d "${TMPDIR:-/tmp}/qvk-speedtest.XXXXXX") || { QVK_SPEEDTEST_ERROR='cannot create installer temp directory'; return 1; }
   fi
   qvk_log "$(msg throughput.installing)" >&2
+  export DEBIAN_FRONTEND=noninteractive
+  local apt_opts=(-o Acquire::http::Timeout=30 -o Acquire::ftp::Timeout=30 -o Acquire::https::Timeout=30)
   if ! command -v gpg >/dev/null 2>&1; then
-    timeout "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get update >/dev/null 2>&1 || rc=$?
+    timeout -k 5 "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get "${apt_opts[@]}" update >/dev/null 2>&1 || rc=$?
     if ((rc == 0)); then
-      timeout "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get install -y gnupg >/dev/null 2>&1 || rc=$?
+      timeout -k 5 "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get "${apt_opts[@]}" install -y gnupg >/dev/null 2>&1 || rc=$?
     fi
   fi
   if ((rc == 0)); then
-    curl -fsSL --max-time 60 -o "$tmp/ookla.asc" "$QVK_SPEEDTEST_KEY_URL" || rc=$?
+    curl -fsSL --max-time 30 -o "$tmp/ookla.asc" "$QVK_SPEEDTEST_KEY_URL" || rc=$?
   fi
   if ((rc == 0)); then
-    gpg --dearmor --batch --yes -o "$tmp/ookla.gpg" "$tmp/ookla.asc" >/dev/null 2>&1 || rc=$?
+    timeout -k 5 30 gpg --dearmor --batch --yes -o "$tmp/ookla.gpg" "$tmp/ookla.asc" >/dev/null 2>&1 || rc=$?
   fi
   if ((rc == 0)); then
     if [[ -e $keyring ]] && ! cmp -s -- "$tmp/ookla.gpg" "$keyring"; then
@@ -212,10 +214,10 @@ qvk_speedtest_ensure() {
     fi
   fi
   if ((rc == 0)); then
-    timeout "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get update >/dev/null 2>&1 || rc=$?
+    timeout -k 5 "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get "${apt_opts[@]}" update >/dev/null 2>&1 || rc=$?
   fi
   if ((rc == 0)); then
-    timeout "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get install -y speedtest >/dev/null 2>&1 || rc=$?
+    timeout -k 5 "$QVK_SPEEDTEST_INSTALL_TIMEOUT" apt-get "${apt_opts[@]}" install -y --no-install-recommends speedtest >/dev/null 2>&1 || rc=$?
   fi
   rm -rf -- "$tmp"
   if ((rc != 0)) || ! _speedtest_cli_is_ookla; then
