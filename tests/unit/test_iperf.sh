@@ -1,6 +1,38 @@
 #!/usr/bin/env bash
 set -uo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/../lib/assert.sh"
+source "$REPO_ROOT/lib/iperf.sh"
+
+iperf_json=$(cat <<'JSON'
+{
+  "intervals": [
+    {
+      "sum": {
+        "bits_per_second": 35000000
+      }
+    }
+  ],
+  "end": {
+    "sum_sent": {
+      "bits_per_second": 40000000
+    },
+    "sum_received": {
+      "bits_per_second": 50000000
+    },
+    "streams": [
+      {
+        "sender": {
+          "rtt": 12345
+        }
+      }
+    ]
+  }
+}
+JSON
+)
+assert_eq "50.0" "$(_iperf_parse_download "$iperf_json")" "download uses end.sum_received, not last/first generic rate"
+assert_eq "40.0" "$(_iperf_parse_upload "$iperf_json")" "upload uses end.sum_sent, not interval rate"
+assert_eq "12.3" "$(_iperf_parse_latency "$iperf_json")" "latency is converted from microseconds"
 
 # The human report must surface the command's diagnostic, not just the host.
 source "$REPO_ROOT/lib/report.sh"

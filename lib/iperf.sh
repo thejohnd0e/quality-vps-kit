@@ -57,14 +57,10 @@ qvk_iperf_ensure() {
 
 # _iperf_parse_download <json> — extract download Mbps from iperf3 JSON.
 _iperf_parse_download() {
-  local json=$1
   local bps
-  # iperf3 JSON: end.sum_received.bits_per_second
-  bps=$(printf '%s' "$json" | grep -o '"sum_received"[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
-  if [[ -z $bps ]]; then
-    # Fallback: try sum (without _received or _sent)
-    bps=$(printf '%s' "$json" | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | tail -1 | sed -E 's/.*:[[:space:]]*//')
-  fi
+  # iperf3 pretty-prints JSON, so flatten line breaks before walking the
+  # end.sum_received object. Avoid generic matches that can select an interval.
+  bps=$(printf '%s' "$1" | tr '\n' ' ' | grep -oE '"sum_received"[[:space:]]*:[[:space:]]*\{[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9]+([.][0-9]+)?' | head -1 | sed -E 's/.*:[[:space:]]*//')
   if [[ -n $bps ]]; then
     awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
   else
@@ -74,13 +70,9 @@ _iperf_parse_download() {
 
 # _iperf_parse_upload <json> — extract upload Mbps from iperf3 JSON.
 _iperf_parse_upload() {
-  local json=$1
   local bps
-  bps=$(printf '%s' "$json" | grep -o '"sum_sent"[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
-  if [[ -z $bps ]]; then
-    # Fallback
-    bps=$(printf '%s' "$json" | grep -o '"bits_per_second"[[:space:]]*:[[:space:]]*[0-9.]*' | head -1 | sed -E 's/.*:[[:space:]]*//')
-  fi
+  # Use the final aggregate in end.sum_sent, not the first interval rate.
+  bps=$(printf '%s' "$1" | tr '\n' ' ' | grep -oE '"sum_sent"[[:space:]]*:[[:space:]]*\{[^}]*"bits_per_second"[[:space:]]*:[[:space:]]*[0-9]+([.][0-9]+)?' | head -1 | sed -E 's/.*:[[:space:]]*//')
   if [[ -n $bps ]]; then
     awk "BEGIN {printf \"%.1f\", $bps / 1000000}"
   else
