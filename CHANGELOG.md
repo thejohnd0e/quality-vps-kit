@@ -4,6 +4,15 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-10
+
+### Fixed
+
+- Include ShellCheck source annotations for the new iperf regression test so the release workflow can validate it.
+- Parse iperf3 pretty-printed JSON from the end-of-test aggregates, so upload no longer reports an interval rate and successful tests no longer show zero throughput due to multiline JSON.
+- Include iperf3 connection diagnostics in human-readable error rows.
+- Pin the one-line installer to v0.1.7 so VPS runs receive these fixes.
+
 ## [0.1.6] - 2026-11-10
 
 ### Fixed

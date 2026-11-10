@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
+# shellcheck source=tests/lib/assert.sh
 source "$(dirname -- "${BASH_SOURCE[0]}")/../lib/assert.sh"
+# shellcheck source=lib/iperf.sh
 source "$REPO_ROOT/lib/iperf.sh"
 
 iperf_json=$(cat <<'JSON'
