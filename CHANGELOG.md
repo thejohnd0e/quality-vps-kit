@@ -8,6 +8,9 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 - Replace the flaky public iperf3 server matrix with one Speedtest by Ookla measurement. Every normal run now installs the official Ookla CLI from its APT repository when missing, then runs the test; `--offline` skips both.
 - Keep `--max-traffic-mb` unsupported because Ookla cannot enforce a traffic cap.
+- When Ookla cannot be installed or reach its servers, measure speed with curl against `speed.cloudflare.com` (test `speedtest_cloudflare`). Ookla failures now carry Ookla's own error message instead of a bare exit code.
+- Speed numbers (`download_mbps`, `upload_mbps`, `latency_ms`, `*_bytes`) move from `details` to `metrics`; `details` holds the server name/location or Cloudflare colo. New reason codes `install_failed` and `speedtest_failed` (previously emitted without being in the schema).
+- The human report starts with a summary (verdict, IP/ASN/country, speed, reachable vs. unreachable services by name, Claude risk, checks needing attention); run metadata moved to the end.
 
 ## [0.1.10] - 2026-11-10
 

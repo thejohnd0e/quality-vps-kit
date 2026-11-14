@@ -27,7 +27,7 @@ _speedtest_parse_latency() {
   section=$(_speedtest_top_object "$json" ping) || return 1
   latency=$(printf '%s' "$section" | tr '\n\r\t' '   ' | grep -oE '"latency"[[:space:]]*:[[:space:]]*[0-9]+([.][0-9]+)?' | head -1 | grep -oE '[0-9]+([.][0-9]+)?$')
   [[ $latency =~ ^[0-9]+([.][0-9]+)?$ ]] || return 1
-  printf '%s' "$latency"
+  awk -v l="$latency" 'BEGIN { printf "%.1f", l }'
 }
 
 _speedtest_parse_bytes() {

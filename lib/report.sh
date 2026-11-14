@@ -368,7 +368,7 @@ _qvk_summary_ip() {
   fi
   [[ -n ${geo:-} ]] && parts+=("$geo")
   [[ -n ${QVK_TARGET_NAT:-} && $QVK_TARGET_NAT != unknown && $QVK_TARGET_NAT != none ]] \
-    && parts+=("NAT: $QVK_TARGET_NAT")
+    && parts+=("NAT: $(msg "nat.$QVK_TARGET_NAT")")
   if ((${#parts[@]})); then _join "${parts[@]}"; else msg unknown; fi
 }
 

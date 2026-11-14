@@ -101,7 +101,8 @@ cd quality-vps-kit-*/
 Or from a checkout: `git clone <repo-url> && cd quality-vps-kit && ./qvk run`.
 
 Every normal `./qvk run` includes one Speedtest by Ookla measurement. If the official
-CLI is missing, qvk installs it from Ookla's signed APT repository without prompting.
+CLI is missing, qvk installs it from Ookla's signed APT repository without prompting;
+if Ookla fails, a curl-only Cloudflare measurement fills in.
 Use `--offline` to skip the test and any installation.
 
 The one-liner pipes `install.sh` into `bash`; read it first if you prefer (it is short). Build a tarball with `scripts/release.sh`.
@@ -127,7 +128,15 @@ qvk version | qvk --help
 Speedtest by Ookla runs once on every normal invocation. If its official CLI is missing,
 qvk installs it from Ookla's APT repository and installs the `speedtest` package; this
 adds a package source/key and package to the VPS. The test uses network bandwidth and
-may incur provider traffic charges. `--offline` never installs or runs it.
+may incur provider traffic charges (a fast link can move several GB in one Ookla run).
+If Ookla cannot be installed or cannot reach its servers, qvk measures with `curl`
+against `speed.cloudflare.com` instead (4 parallel streams, about 10 s per direction,
+roughly 200 MB down and 40 MB up, installs nothing). The report shows Ookla's own error
+message. `--offline` never installs or runs either test.
+
+The human report starts with a summary: verdict, public IP with ASN and country, speed,
+how many services are reachable (with the names of those that do not respond or are
+denied), Claude risk and the checks that need attention. Details follow below it.
 `--max-traffic-mb` remains unsupported because Ookla's test cannot enforce a byte cap.
 
 Examples:
