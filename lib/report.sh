@@ -202,7 +202,7 @@ _qvk_human_system() {
   _qvk_human_field report.memory "$(_or_unknown "$v")"
 
   if [[ -n ${QVK_SYS[disk_root.total_mb]:-} ]]; then
-    v=$(msg report.disk_value "${QVK_SYS[disk_root.total_mb]}" "${QVK_SYS[disk_root.available_mb]:-?}")
+    v=$(msg report.disk_value "$(_qvk_fmt_mb "${QVK_SYS[disk_root.total_mb]}")"       "$(_qvk_fmt_mb "${QVK_SYS[disk_root.available_mb]:-}" || printf '?')")
   else
     v=""
   fi
