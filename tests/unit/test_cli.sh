@@ -70,12 +70,12 @@ assert_contains "$OUT" "$(cat "$REPO_ROOT/VERSION")" "version prints VERSION"
 run_qvk - --help
 assert_eq 0 "$CODE" "--help exits 0"
 assert_contains "$OUT" "Usage: qvk" "--help prints usage"
-run_qvk - --lang ru help
-assert_contains "$OUT" "Использование" "global --lang ru localizes help"
+run_qvk - --lang en help
+assert_contains "$OUT" "Usage: qvk" "--lang en is accepted"
 run_qvk - help --lang=ru
-assert_contains "$OUT" "Использование" "--lang=ru after command localizes help"
+assert_eq 1 "$CODE" "--lang ru is no longer supported"
 LANG=ru_RU.UTF-8 run_qvk - help
-assert_contains "$OUT" "Использование" "LANG=ru_RU selects Russian"
+assert_contains "$OUT" "Usage: qvk" "ru locale still prints English"
 run_qvk - help --lang de
 assert_eq 1 "$CODE" "unsupported --lang is a usage error"
 
@@ -163,9 +163,6 @@ assert_eq 0 "$CODE" "human report exits 0"
 assert_contains "$OUT" "Target self-check" "human report shows target self-check"
 assert_contains "$OUT" "indeterminate" "human report shows verdict"
 assert_not_contains "$OUT" $'\033[' "no ANSI colors when stdout is not a TTY"
-run_qvk as_root_debian run --lang ru
-assert_contains "$OUT" "Самопроверка VPS" "human report in Russian"
-assert_contains "$OUT" "не определено" "verdict translated"
 
 echo "# doctor"
 QVK_TEST_EUID=1000 QVK_TEST_OS_RELEASE="$FIX/os-release/debian-12" QVK_TEST_ARCH=x86_64 run_qvk - doctor
@@ -177,8 +174,6 @@ assert_eq 0 "$CODE" "doctor as root exits 0"
 assert_contains "$OUT" 'ready for "qvk run"' "doctor reports ready"
 QVK_TEST_EUID=0 QVK_TEST_OS_RELEASE="$FIX/os-release/centos-9" QVK_TEST_ARCH=x86_64 run_qvk - doctor
 assert_eq 2 "$CODE" "doctor on unsupported OS exits 2"
-run_qvk as_root_debian doctor --lang ru
-assert_contains "$OUT" "Обязательные утилиты" "doctor in Russian"
 run_qvk as_root_debian doctor --bogus
 assert_eq 1 "$CODE" "doctor rejects unknown options"
 

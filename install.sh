@@ -2,7 +2,7 @@
 # One-line runner: downloads qvk from the master branch and runs it.
 # Installs nothing and changes no host settings.
 #   curl -fsSL https://raw.githubusercontent.com/thejohnd0e/quality-vps-kit/master/install.sh | bash
-#   ... | bash -s -- run --lang ru        (arguments are passed to qvk; default: run)
+#   ... | bash -s -- run --offline       (arguments are passed to qvk; default: run)
 set -euo pipefail
 
 base="https://github.com/thejohnd0e/quality-vps-kit/archive/refs/heads/master"

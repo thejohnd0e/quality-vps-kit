@@ -7,7 +7,7 @@ ICMP RTT and a resolver comparison when the tools exist), inventory, VPN-readine
 egress IP with conflict detection, NAT hint, DNS/TCP/TLS/HTTP timing via `curl -w`,
 RTT towards Russia-hosted endpoints, clock offset, IP intelligence (RIPEstat, IPinfo,
 AbuseIPDB), geo consensus, HTTP reachability of services, per-area verdicts,
-`--offline`, `--redact-ip`, `--lang en|ru`, JSON schema 0.1.
+`--offline`, `--redact-ip`, `--lang en`, JSON schema 0.1.
 
 Known gaps before calling v0.1 final:
 

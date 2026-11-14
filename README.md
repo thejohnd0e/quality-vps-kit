@@ -1,6 +1,5 @@
 # Quality VPS Kit
 
-**English** · [Русский](README.ru.md)
 
 [![CI](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/thejohnd0e/quality-vps-kit/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/github/license/thejohnd0e/quality-vps-kit)](LICENSE) [![Release](https://img.shields.io/github/v/release/thejohnd0e/quality-vps-kit?include_prereleases)](https://github.com/thejohnd0e/quality-vps-kit/releases) ![Shell](https://img.shields.io/badge/shell-bash-4EAA25?logo=gnubash&logoColor=white) ![Platform](https://img.shields.io/badge/platform-Debian%20%7C%20Ubuntu-A81D33?logo=debian&logoColor=white) ![Mode](https://img.shields.io/badge/mode-read--only-success)
 
@@ -38,7 +37,7 @@ curl -fsSL https://raw.githubusercontent.com/thejohnd0e/quality-vps-kit/master/i
 
 It downloads the pinned release, verifies its SHA-256, runs the report (about a minute)
 and deletes its temporary files. Nothing is installed and no setting is changed.
-Pass options after `-s --`, e.g. `... | bash -s -- run --lang ru` or `... | bash -s -- doctor`.
+Pass options after `-s --`, e.g. `... | bash -s -- run --offline` or `... | bash -s -- doctor`.
 
 To keep a machine-readable copy that is safe to share:
 
@@ -122,7 +121,7 @@ qvk version | qvk --help
 | `--output FILE` | write the report to `FILE` (mode 0600) |
 | `--offline` | no external request at all; network checks become `skipped` |
 | `--redact-ip` | replace IP addresses (and prefix, reverse DNS) before you share a report |
-| `--lang en\|ru` | language of the human report; JSON is always English |
+| `--lang en` | accepted for compatibility; output is English only |
 | `--endpoints FILE` | your own endpoint list (default `config/endpoints.tsv`) |
 
 Speedtest by Ookla runs once on every normal invocation. If its official CLI is missing,
@@ -144,7 +143,7 @@ Examples:
 ```bash
 ./qvk run                                        # readable report
 ./qvk run --format json --output report.json --redact-ip
-./qvk run --profile full --lang ru
+./qvk run --profile full
 ./qvk run --offline                              # local facts only
 ```
 

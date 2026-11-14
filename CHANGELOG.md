@@ -6,6 +6,7 @@ Tool releases follow Semantic Versioning. The JSON report schema has its own ver
 
 ### Changed
 
+- Output is English only: removed the Russian catalog (`lib/i18n/ru.sh`) and `README.ru.md`. `--lang en` is still accepted; `--lang ru` is now a usage error.
 - Replace the flaky public iperf3 server matrix with one Speedtest by Ookla measurement. Every normal run now installs the official Ookla CLI from its APT repository when missing, then runs the test; `--offline` skips both.
 - Keep `--max-traffic-mb` unsupported because Ookla cannot enforce a traffic cap.
 - When Ookla cannot be installed or reach its servers, measure speed with curl against `speed.cloudflare.com` (test `speedtest_cloudflare`). Ookla failures now carry Ookla's own error message instead of a bare exit code.

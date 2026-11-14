@@ -69,10 +69,10 @@ prescan_lang() {
     prev=$arg
   done
   case $lang in
-    "" | en | ru) qvk_set_lang "$lang" ;;
+    "" | en) qvk_set_lang "$lang" ;;
     *)
       qvk_set_lang ""
-      usage_error err.bad_value --lang "$lang" "en|ru"
+      usage_error err.bad_value --lang "$lang" "en"
       ;;
   esac
 }

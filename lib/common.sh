@@ -12,7 +12,6 @@
 }
 
 QVK_TMPDIR=""
-QVK_USER_LOCALE=""
 
 # Wait-spinner state (stderr, TTY only). Spins while a stage is running so a
 # long check never looks like a hang.
@@ -20,10 +19,9 @@ QVK_PROGRESS_PID=""
 QVK_PROGRESS_RUNNING=0
 QVK_PROGRESS_MSG=""
 
-# Capture the user's locale (for --lang autodetection) and then force a
+# Force a
 # predictable environment for parsing command output.
 qvk_init_env() {
-  QVK_USER_LOCALE="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
   export LC_ALL=C
   umask 077
 }

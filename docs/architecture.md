@@ -19,7 +19,7 @@ v0.1 delivers only `qvk`. Nothing in `qvk` depends on the controller.
 qvk                     entry point: argument parsing, commands doctor/run/version/help
 lib/common.sh           environment (LC_ALL=C, umask 077), exit codes, temp dir, traps, terminal output
 lib/json.sh             JSON emitter in pure Bash
-lib/i18n.sh             message lookup; catalogs in lib/i18n/{en,ru}.sh
+lib/i18n.sh             message lookup; English catalog in lib/i18n/en.sh
 lib/platform.sh         os-release parsing, arch, root check, tool detection
 lib/inventory.sh        read-only system facts -> QVK_SYS (QVK-01)
 lib/readiness.sh        VPN-readiness checks over QVK_SYS -> tests[] (QVK-01a)

@@ -176,8 +176,7 @@ assert_contains "$(test_field "$R" listening_ports reason)" "80/tcp" "listening 
 assert_contains "$(test_field "$R" listening_ports reason)" "443/udp" "bound 443/udp found"
 assert_not_contains "$(test_field "$R" listening_ports reason)" "443/tcp" "established 443 is not a listener"
 assert_eq "" "$(stub_calls_not_allowed)" "only allow-listed read-only commands were run"
-human=$("$REPO_ROOT/qvk" run --offline --lang ru 2>/dev/null)
-assert_contains "$human" "Готовность к VPN" "russian readiness section"
-assert_contains "$human" "lxc (контейнер)" "russian container label"
+human=$("$REPO_ROOT/qvk" run --offline 2>/dev/null)
+assert_contains "$human" "lxc (container)" "container label"
 
 finish_tests

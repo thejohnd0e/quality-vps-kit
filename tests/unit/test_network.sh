@@ -165,8 +165,8 @@ assert_eq '"skipped"' "$(tf egress_ipv6 status)" "ipv6 skipped"
 assert_eq '"not_applicable"' "$(tf egress_ipv6 reason_code)" "ipv6 not applicable"
 assert_eq 0 "$(grep -c -- '^curl .* -6 ' "$QVK_STUB_LOG")" "no IPv6 requests without an IPv6 route"
 assert_eq '"suitable"' "$(jf summary.verdicts.target_self_check.verdict)" "NAT alone is not a failure"
-human=$("$REPO_ROOT/qvk" run --lang ru 2>/dev/null)
-assert_contains "$human" "NAT: вероятно 1:1 NAT" "russian NAT label"
+human=$("$REPO_ROOT/qvk" run 2>/dev/null)
+assert_contains "$human" "1:1 NAT suspected" "NAT label"
 
 echo "# --offline: no requests at all"
 host debian12-kvm-amd64

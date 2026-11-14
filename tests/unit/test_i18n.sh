@@ -11,15 +11,6 @@ source "$QVK_LIB/common.sh"
 source "$QVK_LIB/i18n.sh"
 qvk_i18n_load
 
-QVK_USER_LOCALE=""
-qvk_set_lang ""
-assert_eq en "$QVK_LANG" "default language is English"
-QVK_USER_LOCALE=ru_RU.UTF-8
-qvk_set_lang ""
-assert_eq ru "$QVK_LANG" "ru locale selects Russian"
-qvk_set_lang en
-assert_eq en "$QVK_LANG" "explicit flag beats the locale"
-
 qvk_set_lang en
 assert_eq "yes" "$(msg yes)" "plain lookup"
 assert_eq "no.such.key" "$(msg no.such.key)" "unknown key falls back to the key"
@@ -32,21 +23,7 @@ assert_eq "low trust score" "$(msg claude_risk.reason.low_trust_score)" "claude 
 assert_eq "Claude risk" "$(msg report.claude_risk)" "claude risk label"
 assert_eq "Claude trust score 79" "$(msg claude_risk.trust 79)" "claude trust score wording"
 
-qvk_set_lang ru
-assert_eq "да" "$(msg yes)" "Russian lookup"
-assert_eq "риск для Claude" "$(msg report.claude_risk)" "russian claude risk label"
-assert_eq "yes" "$(msg_en yes)" "msg_en ignores the active language"
+assert_eq "yes" "$(msg_en yes)" "msg_en returns English"
 
-# Every Russian key must exist in English and use the same number of conversions.
-bad=""
-for k in "${!QVK_MSG_RU[@]}"; do
-  if [[ -z ${QVK_MSG_EN[$k]+x} ]]; then bad+="$k(missing-en) "; continue; fi
-  e=${QVK_MSG_EN[$k]//%%/}
-  r=${QVK_MSG_RU[$k]//%%/}
-  e=${e//[^%]/}
-  r=${r//[^%]/}
-  [[ ${#e} == "${#r}" ]] || bad+="$k(args ${#e}!=${#r}) "
-done
-assert_eq "" "$bad" "ru catalog keys exist in en with matching argument counts"
 
 finish_tests
