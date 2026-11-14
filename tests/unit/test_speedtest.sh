@@ -16,9 +16,13 @@ QVK_US=$'\x1f'
 QVK_SPEEDTEST_TIMEOUT=2
 QVK_TEST_EUID=0
 QVK_CAPTURED_TEST=()
-qvk_add_test() { QVK_CAPTURED_TEST=("$@"); }
+qvk_add_test() { QVK_CAPTURED_TEST+=("$@"); }
 qvk_log() { :; }
+qvk_progress() { :; }
 msg() { printf '%s' "$1"; }
+QVK_TMPDIR="$WORK/tmp"
+mkdir -p "$QVK_TMPDIR"
+qvk_tmpdir() { printf '%s' "$QVK_TMPDIR"; }
 
 speed_json=$(cat <<'JSON'
 {
@@ -56,6 +60,9 @@ qvk_speedtest_run
 assert_eq 1 "$(wc -l <"$WORK/args" | tr -d ' ')" "speedtest CLI invoked once"
 assert_contains "$(cat "$WORK/args")" "--accept-license --accept-gdpr --format=json" "official CLI accepts terms non-interactively and requests JSON"
 assert_contains "${QVK_CAPTURED_TEST[*]}" "id=speedtest_ookla" "one Ookla report record produced"
+assert_not_contains "${QVK_CAPTURED_TEST[*]}" "speedtest_cloudflare" "no fallback after a valid Ookla result"
+assert_eq "100.0 20.0 18.4" "$QVK_SPEED_DOWN $QVK_SPEED_UP $QVK_SPEED_LAT" "summary globals hold the Ookla result"
+assert_eq "Ookla, Test ISP (Paris)" "$QVK_SPEED_SOURCE" "summary names the Ookla server"
 assert_contains "${QVK_CAPTURED_TEST[*]}" "status=pass" "valid Ookla result passes"
 assert_contains "${QVK_CAPTURED_TEST[*]}" '"download_mbps":100' "report contains parsed download"
 assert_contains "${QVK_CAPTURED_TEST[*]}" '"upload_mbps":20' "report contains parsed upload"
@@ -128,7 +135,60 @@ STUB
 chmod +x "$WORK/bin/speedtest"
 QVK_CAPTURED_TEST=()
 qvk_speedtest_run
-assert_contains "${QVK_CAPTURED_TEST[*]}" "status=error" "invalid output is an error"
+assert_contains "${QVK_CAPTURED_TEST[*]}" "Ookla Speedtest failed: exit code 1" "CLI failure without an Ookla message names the exit code"
 assert_not_contains "${QVK_CAPTURED_TEST[*]}" "token-secret" "raw CLI error output is not recorded"
+
+# Ookla's own error message replaces a bare exit code.
+cat >"$WORK/bin/speedtest" <<'STUB'
+#!/usr/bin/env bash
+if [[ $1 == --version ]]; then echo 'Speedtest by Ookla 1.2.0'; exit 0; fi
+echo '[2026-11-14 16:15:42.733] [error] Configuration - Timeout was reached (TimeoutException)' >&2
+echo '{"type":"log","timestamp":"2026-11-14T13:15:42Z","message":"Configuration - Could not retrieve or read configuration (ConfigurationError)","level":"error"}'
+exit 2
+STUB
+chmod +x "$WORK/bin/speedtest"
+QVK_CAPTURED_TEST=()
+qvk_speedtest_run
+assert_contains "${QVK_CAPTURED_TEST[*]}" "Ookla Speedtest failed: Configuration - Could not retrieve or read configuration (ConfigurationError)" \
+  "Ookla failure shows Ookla's own reason"
+assert_contains "${QVK_CAPTURED_TEST[*]}" "reason_code=speedtest_failed" "Ookla failure has a schema reason code"
+assert_contains "$QVK_SPEED_ERROR" "Could not retrieve" "summary keeps the Ookla reason"
+
+# When Ookla fails, a curl-only Cloudflare measurement fills in.
+cat >"$WORK/bin/curl" <<'STUB'
+#!/usr/bin/env bash
+url="" w=""
+while (($#)); do
+  case $1 in
+    -w) w=$2; shift ;;
+    -o | -H | --data-binary | --max-time | --connect-timeout) shift ;;
+    https://*) url=$1 ;;
+  esac
+  shift
+done
+case $url in
+  */cdn-cgi/trace) printf 'fl=1\ncolo=FRA\nloc=DE\n' ;;
+  *'__down?bytes=0') printf '0.002000 0.012000' ;;
+  *__down*) printf '50000000 2.000000 200\n' ;;
+  */__up) printf '10000000 4.000000 200\n' ;;
+  *) exit 6 ;;
+esac
+STUB
+chmod +x "$WORK/bin/curl"
+QVK_CAPTURED_TEST=()
+qvk_speedtest_run
+assert_contains "${QVK_CAPTURED_TEST[*]}" "id=speedtest_cloudflare" "Cloudflare fallback record produced"
+assert_contains "${QVK_CAPTURED_TEST[*]}" '"download_mbps":800' "4 x 50 MB in 2 s = 800 Mbps"
+assert_contains "${QVK_CAPTURED_TEST[*]}" '"upload_mbps":80' "4 x 10 MB in 4 s = 80 Mbps"
+assert_contains "${QVK_CAPTURED_TEST[*]}" '"latency_ms":10' "latency is the TCP connect time"
+assert_eq "Cloudflare FRA" "$QVK_SPEED_SOURCE" "summary names the Cloudflare edge"
+assert_true "Cloudflare work files are removed" test ! -e "$QVK_TMPDIR/speedtest-cf"
+
+# Fallback with no data is a failure, not zero Mbps.
+printf '#!/bin/sh\nexit 7\n' >"$WORK/bin/curl"
+QVK_CAPTURED_TEST=()
+qvk_speedtest_run
+assert_contains "${QVK_CAPTURED_TEST[*]}" "reason_code=no_responder" "no transfer is reported as no_responder"
+assert_eq "" "$QVK_SPEED_DOWN" "no speed is invented"
 
 finish_tests

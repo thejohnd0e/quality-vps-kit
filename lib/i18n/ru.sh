@@ -306,10 +306,8 @@ Read-only оценка нового VPS перед использованием 
   [diag.icmp_none]='%s: нет ответа на ICMP (часто фильтруется; о TCP/UDP не говорит ничего)'
   [diag.dns_same]='резолверов: %s, одинаково разрешились имена: %s (только наличие ответа)'
   [diag.dns_mismatch]='системный резолвер не ответил для %s из %s имён, которые разрешили публичные'
-  [report.section.throughput]='Скорость сети (Speedtest от Ookla)'
   [throughput.installing]='Установка официального Ookla Speedtest CLI...'
   [throughput.offline]='пропущено: офлайн-режим'
   [throughput.error]='%s'
-  [throughput.row]='Загрузка: %s Мбит/с; отдача: %s Мбит/с; задержка: %s мс (Ookla Speedtest)'
   [progress.throughput]='установка/запуск Ookla Speedtest...'
 )

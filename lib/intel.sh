@@ -16,6 +16,7 @@
 # A score from one provider is not an objective probability of being blocked.
 
 QVK_INTEL_SOURCES=()
+QVK_INTEL_ASN="" QVK_INTEL_HOLDER=""
 QVK_GEO_JSON="null"
 QVK_GEO_COUNTRIES=""
 QVK_GEO_CONFLICT=""
@@ -174,6 +175,10 @@ _intel_header_file() {
 _intel_emit() {
   local source=$1 method=$2 endpoint=$3 status=$4 code=$5 reason=$6 hmsg=$7 hargs=$8
   local id="intel_$source"
+  # First source that names the ASN feeds the report summary.
+  if [[ $status == pass && -z $QVK_INTEL_ASN && -n ${A_ASN:-} ]]; then
+    QVK_INTEL_ASN=$A_ASN QVK_INTEL_HOLDER=${A_HOLDER:-}
+  fi
   QVK_INTEL_SOURCES+=("$(_intel_source_json "$source" "$id" "$status" "$code")")
   qvk_add_test id="$id" section=ip_intelligence method="$method" endpoint="$endpoint" \
     status="$status" reason_code="$code" reason="$reason" samples=1 \

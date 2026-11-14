@@ -285,6 +285,11 @@ _qvk_human_geo() {
 
 _qvk_human_claude_risk() {
   [[ -n ${QVK_CLAUDE_RISK_LEVEL:-} ]] || return 0
+  printf '\n%s\n  %s\n' "$(qvk_paint bold "$(msg report.claude_risk)")" "$(_qvk_claude_risk_text)"
+}
+
+# Painted one-line Claude risk: level, reasons, trust score.
+_qvk_claude_risk_text() {
   local level text r reasons=""
   local -a parts=()
   for r in "${QVK_CLAUDE_RISK_REASONS[@]}"; do
@@ -303,7 +308,130 @@ _qvk_human_claude_risk() {
     medium | unknown) text=$(qvk_paint yellow "$text") ;;
     *) text=$(qvk_paint green "$text") ;;
   esac
-  printf '\n%s\n  %s\n' "$(qvk_paint bold "$(msg report.claude_risk)")" "$text"
+  printf '%s' "$text"
+}
+
+# --- summary (top of the human report) ----------------------------------------
+
+# Megabytes -> "512 MB" / "18.5 GB".
+_qvk_fmt_mb() {
+  [[ $1 =~ ^[0-9]+$ ]] || return 1
+  if (($1 < 1024)); then printf '%s MB' "$1"; else awk -v m="$1" 'BEGIN { printf "%.1f GB", m / 1024 }'; fi
+}
+
+# Seconds between two UTC timestamps -> "2m 05s".
+_qvk_fmt_duration() {
+  local a b s
+  a=$(date -u -d "$1" +%s 2>/dev/null) && b=$(date -u -d "$2" +%s 2>/dev/null) || return 1
+  s=$((b - a))
+  ((s >= 0)) || return 1
+  if ((s >= 60)); then printf '%dm %02ds' $((s / 60)) $((s % 60)); else printf '%ds' "$s"; fi
+}
+
+# Up to <max> comma-separated names, then "+N more".
+_qvk_name_list() {
+  local max=$1 out="" i=0 n
+  shift
+  for n in "$@"; do
+    if ((i < max)); then out+="${out:+, }$n"; fi
+    i=$((i + 1))
+  done
+  ((i > max)) && out+=" $(msg summary.more $((i - max)))"
+  printf '%s' "$out"
+}
+
+_qvk_summary_row() {
+  printf '  %s %s\n' "$(qvk_pad "$(msg "$1")" 17)" "$2"
+}
+
+_qvk_summary_header() {
+  local os hw=() v dur line
+  os=${QVK_OS_PRETTY:-$QVK_OS_ID $QVK_OS_VERSION_ID}
+  os=${os% (*)}   # "Debian GNU/Linux 13 (trixie)" -> "Debian GNU/Linux 13"
+  [[ -n ${QVK_SYS[cpu.vcpus]:-} ]] && hw+=("${QVK_SYS[cpu.vcpus]} vCPU")
+  v=$(_qvk_fmt_mb "${QVK_SYS[memory.total_mb]:-}") && hw+=("$v RAM")
+  v=$(_qvk_fmt_mb "${QVK_SYS[disk_root.total_mb]:-}") && hw+=("$v disk")
+  line="quality-vps-kit $QVK_VERSION | $os"
+  ((${#hw[@]})) && line+=" | $(_join "${hw[@]}")"
+  dur=$(_qvk_fmt_duration "$QVK_STARTED_AT" "$QVK_FINISHED_AT") && line+=" | $(msg summary.took "$dur")"
+  printf '%s\n' "$(qvk_paint bold "$line")"
+}
+
+_qvk_summary_ip() {
+  local parts=() geo
+  [[ -n $QVK_TARGET_IP ]] && parts+=("$QVK_TARGET_IP")
+  [[ -n $QVK_INTEL_ASN ]] && parts+=("AS$QVK_INTEL_ASN${QVK_INTEL_HOLDER:+ $QVK_INTEL_HOLDER}")
+  if [[ $QVK_GEO_CONFLICT == true ]]; then
+    geo=$(qvk_paint yellow "$(msg summary.geo_conflict)")
+  elif [[ -n $QVK_GEO_COUNTRIES ]]; then
+    geo="$QVK_GEO_COUNTRIES ($(msg summary.geo_sources "${#QVK_GEO_ORDER[@]}"))"
+  fi
+  [[ -n ${geo:-} ]] && parts+=("$geo")
+  [[ -n ${QVK_TARGET_NAT:-} && $QVK_TARGET_NAT != unknown && $QVK_TARGET_NAT != none ]] \
+    && parts+=("NAT: $QVK_TARGET_NAT")
+  if ((${#parts[@]})); then _join "${parts[@]}"; else msg unknown; fi
+}
+
+_qvk_summary_speed() {
+  if ((QVK_OFFLINE)); then
+    msg summary.speed_offline
+  elif [[ -n $QVK_SPEED_DOWN || -n $QVK_SPEED_UP ]]; then
+    msg summary.speed_value "${QVK_SPEED_DOWN:-?}" "${QVK_SPEED_UP:-?}" "${QVK_SPEED_LAT:-?}" "$QVK_SPEED_SOURCE"
+  else
+    qvk_paint red "$(msg summary.speed_none "${QVK_SPEED_ERROR:-$(msg unknown)}")"
+  fi
+}
+
+# Services row plus the names of unreachable / geo-denied services.
+_qvk_summary_services() {
+  local rec sec id status hmsg hargs total=0
+  local -a ok=() denied=() down=()
+  for rec in "${QVK_TEST_HUMAN[@]}"; do
+    IFS=$QVK_US read -r sec id status hmsg hargs <<<"$rec"
+    [[ $sec == http_reachability ]] || continue
+    total=$((total + 1))
+    case $hmsg in
+      http.ok) ok+=("$(_qvk_test_label "$id")") ;;
+      http.denied | http.rate) denied+=("$(_qvk_test_label "$id")") ;;
+      *) down+=("$(_qvk_test_label "$id")") ;;
+    esac
+  done
+  ((total)) || return 0
+  _qvk_summary_row summary.services \
+    "$(msg summary.services_value "${#ok[@]}" "$total" "${#down[@]}" "${#denied[@]}")"
+  ((${#down[@]})) && _qvk_summary_row summary.unreachable "$(qvk_paint red "$(_qvk_name_list 8 "${down[@]}")")"
+  ((${#denied[@]})) && _qvk_summary_row summary.denied "$(qvk_paint yellow "$(_qvk_name_list 8 "${denied[@]}")")"
+  return 0
+}
+
+# Warnings and failures from host/network checks (not services).
+_qvk_summary_attention() {
+  local rec sec id status hmsg hargs
+  local -a items=()
+  for rec in "${QVK_TEST_HUMAN[@]}"; do
+    IFS=$QVK_US read -r sec id status hmsg hargs <<<"$rec"
+    case $sec in system | vpn_readiness | network_egress | diagnostics) ;; *) continue ;; esac
+    case $status in
+      warn) items+=("$(qvk_paint yellow "$(_qvk_test_label "$id")")") ;;
+      fail | error) items+=("$(qvk_paint red "$(_qvk_test_label "$id")")") ;;
+    esac
+  done
+  if ((${#items[@]})); then
+    _qvk_summary_row summary.attention "$(_join "${items[@]}")"
+  else
+    _qvk_summary_row summary.attention "$(qvk_paint green "$(msg summary.attention_none)")"
+  fi
+}
+
+_qvk_human_summary() {
+  _qvk_summary_header
+  printf '\n%s\n' "$(qvk_paint bold "$(msg summary.title)")"
+  _qvk_summary_row summary.verdict "$(qvk_color_verdict "$QVK_SELF_VERDICT") $(msg summary.verdict_scope)"
+  _qvk_summary_row summary.ip "$(_qvk_summary_ip)"
+  _qvk_summary_row summary.speed "$(_qvk_summary_speed)"
+  _qvk_summary_services
+  [[ -n ${QVK_CLAUDE_RISK_LEVEL:-} ]] && _qvk_summary_row summary.claude "$(_qvk_claude_risk_text)"
+  _qvk_summary_attention
 }
 
 _qvk_test_label() {
@@ -351,14 +479,7 @@ _qvk_human_tests() {
 }
 
 _qvk_report_human_raw() {
-  printf '%s\n\n' "$(qvk_paint bold "$(msg report.title)")"
-  _qvk_human_field report.run_id "$QVK_RUN_ID"
-  _qvk_human_field report.profile "$QVK_PROFILE"
-  _qvk_human_field report.started "$QVK_STARTED_AT"
-  _qvk_human_field report.finished "$QVK_FINISHED_AT"
-  if ((QVK_OFFLINE)); then
-    _qvk_human_field report.offline "$(msg yes)"
-  fi
+  _qvk_human_summary
   printf '\n'
   _qvk_human_system
   _qvk_human_tests system ""
@@ -373,6 +494,14 @@ _qvk_report_human_raw() {
   printf '\n%s\n' "$(qvk_paint bold "$(msg report.verdicts)")"
   _qvk_human_verdict target_self_check "$QVK_SELF_VERDICT" QVK_SELF_REASONS QVK_SELF_MISSING
   _qvk_human_verdict client_reachability "$QVK_CLIENT_VERDICT" QVK_CLIENT_REASONS QVK_CLIENT_MISSING
+  printf '\n%s\n' "$(qvk_paint bold "$(msg report.section.run)")"
+  _qvk_human_field report.run_id "$QVK_RUN_ID"
+  _qvk_human_field report.profile "$QVK_PROFILE"
+  _qvk_human_field report.started "$QVK_STARTED_AT"
+  _qvk_human_field report.finished "$QVK_FINISHED_AT"
+  if ((QVK_OFFLINE)); then
+    _qvk_human_field report.offline "$(msg yes)"
+  fi
 }
 
 qvk_report_human() {

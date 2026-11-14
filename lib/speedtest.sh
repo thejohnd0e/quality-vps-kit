@@ -1,6 +1,6 @@
 # shellcheck shell=bash
-# Official Ookla Speedtest CLI integration. Installation and testing only run
-# when the caller has explicitly enabled load testing.
+# Speed test, always on: the official Ookla Speedtest CLI (installed from its
+# signed APT repo when missing), with a curl-only Cloudflare fallback.
 
 QVK_SPEEDTEST_TIMEOUT=180
 QVK_SPEEDTEST_INSTALL_TIMEOUT=300
@@ -227,36 +227,78 @@ qvk_speedtest_ensure() {
   return 0
 }
 
+# --- Ookla error reporting -----------------------------------------------------
+
+# _speedtest_error_reason <stdout> <stderr file> — Ookla's own error message
+# (JSON log record or "[error] ..." line), sanitized; empty if none. Arbitrary
+# CLI output is never copied into the report.
+_speedtest_error_reason() {
+  local out=$1 errf=$2 line m=""
+  while IFS= read -r line; do
+    [[ $line =~ \"type\"[[:space:]]*:[[:space:]]*\"log\" ]] || continue
+    [[ $line =~ \"level\"[[:space:]]*:[[:space:]]*\"error\" ]] || continue
+    [[ $line =~ \"message\"[[:space:]]*:[[:space:]]*\"([^\"]*)\" ]] && m=${BASH_REMATCH[1]}
+  done <<<"$out"
+  if [[ -z $m && -n $errf && -r $errf ]]; then
+    m=$(grep -E '\[error\]' -- "$errf" 2>/dev/null | tail -1 | sed -E 's/^.*\[error\][[:space:]]*//')
+  fi
+  printf '%s' "$m" | tr -cd 'A-Za-z0-9 .,:;()_/-' | cut -c1-160
+}
+
+# _speedtest_str_field <object json> <key> — first string value of key, sanitized.
+_speedtest_str_field() {
+  local re="\"$2\"[[:space:]]*:[[:space:]]*\"([^\"]*)\""
+  [[ $1 =~ $re ]] || return 1
+  printf '%s' "${BASH_REMATCH[1]}" | tr -cd 'A-Za-z0-9 .,:;()_/-' | cut -c1-80
+}
+
+# _qvk_speedtest_add_failure <id> <method> <status> <reason_code> <reason>
 _qvk_speedtest_add_failure() {
-  local status=$1 code=$2 reason=$3
-  qvk_add_test id=speedtest_ookla section=speedtest method=ookla_speedtest \
+  local id=$1 method=$2 status=$3 code=$4 reason=$5
+  qvk_add_test id="$id" section=speedtest method="$method" \
     status="$status" reason_code="$code" reason="$reason" \
     hmsg=throughput.error hargs="$reason" \
     duration_ms=0 timeout_ms=$((QVK_SPEEDTEST_TIMEOUT * 1000)) samples=1 traffic_bytes=''
 }
 
-qvk_speedtest_run() {
-  local output rc=0 download upload latency download_bytes upload_bytes traffic_bytes duration_ms details
-  if ((QVK_OFFLINE)); then
-    qvk_add_test id=speedtest_ookla section=speedtest method=ookla_speedtest \
-      status=skipped reason_code=offline_mode reason='--offline: no external requests' \
-      hmsg=throughput.offline hargs='' duration_ms=0 timeout_ms=$((QVK_SPEEDTEST_TIMEOUT * 1000)) \
-      samples=1 traffic_bytes=0
-    return 0
-  fi
+# Best speed measurement of the run, for the report summary.
+# shellcheck disable=SC2034  # read by report.sh
+{
+  QVK_SPEED_DOWN="" QVK_SPEED_UP="" QVK_SPEED_LAT="" QVK_SPEED_SOURCE="" QVK_SPEED_ERROR=""
+}
+
+_qvk_speed_metrics() {
+  json_obj download_mbps "$(json_num "$1")" upload_mbps "$(json_num "$2")" \
+    latency_ms "$(json_num "$3")" download_bytes "$(json_num "$4")" upload_bytes "$(json_num "$5")"
+}
+
+# --- Ookla ---------------------------------------------------------------------
+
+# _qvk_speedtest_ookla — returns 0 when a valid Ookla result was recorded.
+_qvk_speedtest_ookla() {
+  local output rc=0 download upload latency download_bytes upload_bytes traffic_bytes duration_ms
+  local errf="" reason server name location details
   if ! qvk_speedtest_ensure; then
-    _qvk_speedtest_add_failure error install_failed "${QVK_SPEEDTEST_ERROR:-Ookla Speedtest CLI installation failed}"
-    return 0
+    QVK_SPEED_ERROR=${QVK_SPEEDTEST_ERROR:-Ookla Speedtest CLI installation failed}
+    _qvk_speedtest_add_failure speedtest_ookla ookla_speedtest error install_failed "$QVK_SPEED_ERROR"
+    return 1
   fi
 
+  [[ -n ${QVK_TMPDIR:-} && -d $QVK_TMPDIR ]] && errf="$QVK_TMPDIR/speedtest.stderr"
   local started=$SECONDS
-  output=$(timeout "$QVK_SPEEDTEST_TIMEOUT" speedtest --accept-license --accept-gdpr --format=json 2>/dev/null) || rc=$?
+  output=$(timeout "$QVK_SPEEDTEST_TIMEOUT" speedtest --accept-license --accept-gdpr --format=json \
+    2>"${errf:-/dev/null}") || rc=$?
   duration_ms=$(((SECONDS - started) * 1000))
   if ((rc != 0)); then
-    if ((rc == 124)); then _qvk_speedtest_add_failure error timeout 'Ookla Speedtest timed out'
-    else _qvk_speedtest_add_failure error speedtest_failed "Ookla Speedtest failed (exit $rc)"
+    reason=$(_speedtest_error_reason "$output" "$errf")
+    if ((rc == 124)); then
+      QVK_SPEED_ERROR="Ookla Speedtest timed out after ${QVK_SPEEDTEST_TIMEOUT} s"
+      _qvk_speedtest_add_failure speedtest_ookla ookla_speedtest fail timeout "$QVK_SPEED_ERROR"
+    else
+      QVK_SPEED_ERROR="Ookla Speedtest failed: ${reason:-exit code $rc}"
+      _qvk_speedtest_add_failure speedtest_ookla ookla_speedtest fail speedtest_failed "$QVK_SPEED_ERROR"
     fi
-    return 0
+    return 1
   fi
   download=$(_speedtest_parse_mbps "$output" download) || download=''
   upload=$(_speedtest_parse_mbps "$output" upload) || upload=''
@@ -264,19 +306,152 @@ qvk_speedtest_run() {
   download_bytes=$(_speedtest_parse_bytes "$output" download) || download_bytes=''
   upload_bytes=$(_speedtest_parse_bytes "$output" upload) || upload_bytes=''
   if [[ -z $download || -z $upload || -z $latency ]]; then
-    _qvk_speedtest_add_failure error invalid_output 'Ookla Speedtest returned invalid JSON or missing metrics'
-    return 0
+    reason=$(_speedtest_error_reason "$output" "$errf")
+    QVK_SPEED_ERROR="Ookla Speedtest returned no result${reason:+: $reason}"
+    _qvk_speedtest_add_failure speedtest_ookla ookla_speedtest error invalid_answer "$QVK_SPEED_ERROR"
+    return 1
   fi
   if [[ $download_bytes =~ ^[0-9]+$ && $upload_bytes =~ ^[0-9]+$ ]]; then
     traffic_bytes=$((download_bytes + upload_bytes))
   else
     traffic_bytes=''
   fi
-  details=$(json_obj download_mbps "$(json_num "$download")" upload_mbps "$(json_num "$upload")" \
-    latency_ms "$(json_num "$latency")" download_bytes "$(json_num "$download_bytes")" \
-    upload_bytes "$(json_num "$upload_bytes")")
+  name="" location=""
+  if server=$(_speedtest_top_object "$output" server); then
+    name=$(_speedtest_str_field "$server" name) || name=""
+    location=$(_speedtest_str_field "$server" location) || location=""
+  fi
+  details=$(json_obj server_name "$(json_str_or_null "$name")" \
+    server_location "$(json_str_or_null "$location")")
+  QVK_SPEED_DOWN=$download QVK_SPEED_UP=$upload QVK_SPEED_LAT=$latency
+  QVK_SPEED_SOURCE="Ookla${name:+, $name}${location:+ ($location)}"
   qvk_add_test id=speedtest_ookla section=speedtest method=ookla_speedtest status=pass \
     endpoint=speedtest.net reason_code='' reason='' details="$details" \
-    hmsg=throughput.row hargs="${download}${QVK_US}${upload}${QVK_US}${latency}" \
-    duration_ms="$duration_ms" timeout_ms=$((QVK_SPEEDTEST_TIMEOUT * 1000)) samples=1 traffic_bytes="${traffic_bytes:-}"
+    metrics="$(_qvk_speed_metrics "$download" "$upload" "$latency" "$download_bytes" "$upload_bytes")" \
+    hmsg=throughput.row hargs="${download}${QVK_US}${upload}${QVK_US}${latency}${QVK_US}${QVK_SPEED_SOURCE}" \
+    duration_ms="$duration_ms" timeout_ms=$((QVK_SPEEDTEST_TIMEOUT * 1000)) samples=1 \
+    traffic_bytes="${traffic_bytes:-}"
+  return 0
+}
+
+# --- Cloudflare fallback (curl only, installs nothing) -------------------------
+
+QVK_SPEEDTEST_CF_URL=https://speed.cloudflare.com
+QVK_SPEEDTEST_CF_STREAMS=4
+QVK_SPEEDTEST_CF_DOWN_BYTES=50000000 # per stream; each phase is time-bounded anyway
+QVK_SPEEDTEST_CF_UP_BYTES=10000000   # per stream
+QVK_SPEEDTEST_CF_PHASE_S=10
+QVK_SPEEDTEST_CF_PINGS=5
+
+# _speedtest_cf_phase <down|up> <workdir> — parallel streams for one direction;
+# prints "<total bytes> <longest stream seconds>".
+_speedtest_cf_phase() {
+  local dir=$1 work=$2 i b t code bytes=0 secs=0
+  local -a pids=()
+  for ((i = 1; i <= QVK_SPEEDTEST_CF_STREAMS; i++)); do
+    if [[ $dir == down ]]; then
+      curl -sS -o /dev/null --connect-timeout 5 --max-time "$QVK_SPEEDTEST_CF_PHASE_S" \
+        -w '%{size_download} %{time_total} %{http_code}\n' \
+        "$QVK_SPEEDTEST_CF_URL/__down?bytes=$QVK_SPEEDTEST_CF_DOWN_BYTES" >"$work/$dir.$i" 2>/dev/null &
+    else
+      curl -sS -o /dev/null --connect-timeout 5 --max-time "$QVK_SPEEDTEST_CF_PHASE_S" \
+        -w '%{size_upload} %{time_total} %{http_code}\n' -H 'Content-Type: application/octet-stream' \
+        --data-binary "@$work/payload" "$QVK_SPEEDTEST_CF_URL/__up" >"$work/$dir.$i" 2>/dev/null &
+    fi
+    pids+=("$!")
+  done
+  wait "${pids[@]}" 2>/dev/null
+  for ((i = 1; i <= QVK_SPEEDTEST_CF_STREAMS; i++)); do
+    read -r b t code <"$work/$dir.$i" 2>/dev/null || continue
+    [[ $b =~ ^[0-9]+$ && $t =~ ^[0-9]+([.][0-9]+)?$ ]] || continue
+    # 200 = complete; 000 = cut by --max-time, valid only if real data moved.
+    case $code in
+      200) ;;
+      000) ((b >= 1000000)) || continue ;;
+      *) continue ;;
+    esac
+    bytes=$((bytes + b))
+    secs=$(awk -v a="$secs" -v b="$t" 'BEGIN { print (b > a) ? b : a }')
+  done
+  ((bytes > 0)) || return 1
+  printf '%s %s\n' "$bytes" "$secs"
+}
+
+# Median TCP connect time to the nearest Cloudflare edge, ms.
+_speedtest_cf_latency() {
+  local i line dns conn v
+  local -a ms=()
+  for ((i = 0; i < QVK_SPEEDTEST_CF_PINGS; i++)); do
+    line=$(curl -sS -o /dev/null --connect-timeout 5 --max-time 5 \
+      -w '%{time_namelookup} %{time_connect}' "$QVK_SPEEDTEST_CF_URL/__down?bytes=0" 2>/dev/null) || continue
+    read -r dns conn <<<"$line"
+    [[ $dns =~ ^[0-9.]+$ && $conn =~ ^[0-9.]+$ ]] || continue
+    v=$(awk -v a="$dns" -v b="$conn" 'BEGIN { if (b > a) printf "%.1f", (b - a) * 1000 }')
+    [[ -n $v ]] && ms+=("$v")
+  done
+  ((${#ms[@]})) || return 1
+  printf '%s\n' "${ms[@]}" | sort -n | awk '{ v[NR] = $1 } END { print v[int((NR + 1) / 2)] }'
+}
+
+_speedtest_mbps() {
+  awk -v b="$1" -v s="$2" 'BEGIN { if (s > 0) printf "%.1f", b * 8 / s / 1000000 }'
+}
+
+# _qvk_speedtest_cloudflare — returns 0 when at least one direction was measured.
+_qvk_speedtest_cloudflare() {
+  local work started duration_ms down="" up="" lat colo dl_bytes="" ul_bytes="" dl_s ul_s source status
+  work="$(qvk_tmpdir)/speedtest-cf"
+  mkdir -p -- "$work" || return 1
+  started=$SECONDS
+  colo=$(curl -sS --connect-timeout 5 --max-time 5 "$QVK_SPEEDTEST_CF_URL/cdn-cgi/trace" 2>/dev/null \
+    | grep -m1 '^colo=' | cut -d= -f2 | tr -cd '[:upper:]')
+  lat=$(_speedtest_cf_latency) || lat=""
+  if read -r dl_bytes dl_s < <(_speedtest_cf_phase down "$work"); then
+    down=$(_speedtest_mbps "$dl_bytes" "$dl_s")
+  else
+    dl_bytes=""
+  fi
+  if head -c "$QVK_SPEEDTEST_CF_UP_BYTES" /dev/zero >"$work/payload" 2>/dev/null \
+    && read -r ul_bytes ul_s < <(_speedtest_cf_phase up "$work"); then
+    up=$(_speedtest_mbps "$ul_bytes" "$ul_s")
+  else
+    ul_bytes=""
+  fi
+  rm -rf -- "$work"
+  duration_ms=$(((SECONDS - started) * 1000))
+  if [[ -z $down && -z $up ]]; then
+    _qvk_speedtest_add_failure speedtest_cloudflare cloudflare_speed_curl fail no_responder \
+      'Cloudflare speed test: no data transferred (speed.cloudflare.com unreachable)'
+    return 1
+  fi
+  source="Cloudflare${colo:+ $colo}"
+  status=pass
+  [[ -n $down && -n $up ]] || status=warn
+  QVK_SPEED_DOWN=$down QVK_SPEED_UP=$up QVK_SPEED_LAT=$lat QVK_SPEED_SOURCE=$source
+  qvk_add_test id=speedtest_cloudflare section=speedtest method=cloudflare_speed_curl status="$status" \
+    endpoint=speed.cloudflare.com reason_code='' reason='' \
+    details="$(json_obj colo "$(json_str_or_null "$colo")" streams "$(json_num "$QVK_SPEEDTEST_CF_STREAMS")")" \
+    metrics="$(_qvk_speed_metrics "$down" "$up" "$lat" "$dl_bytes" "$ul_bytes")" \
+    hmsg=throughput.row hargs="${down:-?}${QVK_US}${up:-?}${QVK_US}${lat:-?}${QVK_US}${source}" \
+    duration_ms="$duration_ms" timeout_ms=$((QVK_SPEEDTEST_CF_PHASE_S * 2000)) \
+    samples="$QVK_SPEEDTEST_CF_STREAMS" traffic_bytes="$((${dl_bytes:-0} + ${ul_bytes:-0}))"
+  return 0
+}
+
+# Speed test (always on): the official Ookla CLI first; if it cannot be
+# installed or cannot reach its servers, a curl-only Cloudflare measurement.
+# shellcheck disable=SC2034  # QVK_SPEED_* are read by report.sh
+qvk_speedtest_run() {
+  QVK_SPEED_DOWN="" QVK_SPEED_UP="" QVK_SPEED_LAT="" QVK_SPEED_SOURCE="" QVK_SPEED_ERROR=""
+  if ((QVK_OFFLINE)); then
+    qvk_add_test id=speedtest_ookla section=speedtest method=ookla_speedtest \
+      status=skipped reason_code=offline_mode reason='--offline: no external requests' \
+      hmsg=throughput.offline hargs='' duration_ms=0 timeout_ms=$((QVK_SPEEDTEST_TIMEOUT * 1000)) \
+      samples=1 traffic_bytes=0
+    return 0
+  fi
+  _qvk_speedtest_ookla && return 0
+  qvk_progress "$(msg progress.throughput_fallback)"
+  _qvk_speedtest_cloudflare || true
+  return 0
 }

@@ -690,6 +690,8 @@
         "middlebox_suspected",
         "not_applicable",
         "internal_error",
+        "install_failed",
+        "speedtest_failed",
         null
       ]
     },
